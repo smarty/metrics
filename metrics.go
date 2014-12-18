@@ -88,9 +88,9 @@ func (this *metric) RegisterChannelDestination(destination chan []Measurement) {
 }
 
 func (this *metric) StartMeasuring() bool {
-	if atomic.AddInt32(&this.started, 1) > 1 {
-		return false
-	}
+	// if atomic.AddInt32(&this.started, 1) > 1 {
+	// 	return false
+	// }
 
 	durations := map[time.Duration][]int{}
 	for i, item := range this.meta {
@@ -105,6 +105,7 @@ func (this *metric) StartMeasuring() bool {
 		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
 
+	this.started++
 	return true
 }
 
@@ -123,9 +124,9 @@ func (this *metric) report(duration time.Duration, indices []int) {
 
 	this.queue <- snapshot
 
-	if this.started > 0 {
-		time.AfterFunc(duration, func() { this.report(duration, indices) })
-	}
+	// if this.started > 0 {
+	time.AfterFunc(duration, func() { this.report(duration, indices) })
+	// }
 }
 
 func (this *metric) StopMeasuring() {
@@ -133,7 +134,7 @@ func (this *metric) StopMeasuring() {
 }
 
 func (this *metric) Count(index int) bool {
-	if index < 0 || len(this.metrics) <= index {
+	if index < 0 || len(this.metrics) <= index || this.started < 1 {
 		return false
 	}
 
