@@ -1,17 +1,10 @@
 package metrics
 
 import (
+	"io/ioutil"
+	"log"
 	"sync/atomic"
 	"time"
-)
-
-///////////////////////////////////////////////////////////////////////////////
-
-var (
-	metrics []int64
-	meta    []metricInfo
-	started int32
-	queue   chan []Measurement
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,42 +12,103 @@ var (
 // Add registers a named metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup.
 func Add(name string, reportingFrequency time.Duration) int {
-	if atomic.LoadInt32(&started) > 0 {
+	return standard.Add(name, reportingFrequency)
+}
+
+// RegisterChannelDestination assigns the channel on which measurements
+// will be published at their respective registered reporting frequencies.
+func RegisterChannelDestination(destination chan []Measurement) {
+	standard.RegisterChannelDestination(destination)
+}
+
+// StartMeasuring signals to this library that all
+// registrations have been performed.
+func StartMeasuring() bool {
+	return standard.StartMeasuring()
+}
+
+// StopMeasuring turns measurement tracking off.
+// It can be turned on again by calling StartMeasuring.
+func StopMeasuring() {
+	standard.StopMeasuring()
+}
+
+// Count (automically) increments the metric at index by one.
+func Count(index int) bool {
+	return standard.Count(index)
+}
+
+// Measure (automically) sets the metric at the specified index to the specified measurement.
+func Measure(index int, measurement int64) bool {
+	return standard.Measure(index, measurement)
+}
+
+// Measurement is the struct that is sent onto the outbound channel for
+// publishing to whatever backend service that happens to be configured.
+type Measurement struct {
+	Index    int
+	Captured time.Time
+	Value    int64
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+var standard = New()
+
+type metric struct {
+	metrics []int64
+	meta    []metricInfo
+	started int32
+	queue   chan []Measurement
+}
+
+type metricInfo struct {
+	Name               string
+	ReportingFrequency time.Duration
+}
+
+func New() *metric {
+	return &metric{}
+}
+
+func (this *metric) Add(name string, reportingFrequency time.Duration) int {
+	if atomic.LoadInt32(&this.started) > 0 {
 		return -1
 	}
 
 	// TODO: if name already taken; if reporting frequency is zero or negative
-	metrics = append(metrics, int64(0))
+	this.metrics = append(this.metrics, int64(0))
 	info := metricInfo{Name: name, ReportingFrequency: reportingFrequency}
-	meta = append(meta, info)
-	return len(metrics) - 1
+	this.meta = append(this.meta, info)
+	return len(this.metrics) - 1
 }
 
-func RegisterChannelDestination(destination chan []Measurement) {
-	queue = destination
+func (this *metric) RegisterChannelDestination(destination chan []Measurement) {
+	this.queue = destination
 }
 
-func StartMeasuring() bool {
-	if atomic.AddInt32(&started, 1) > 1 {
+func (this *metric) StartMeasuring() bool {
+	if atomic.AddInt32(&this.started, 1) > 1 {
 		return false
 	}
 
 	durations := map[time.Duration][]int{}
-	for i, item := range meta {
+	for i, item := range this.meta {
 		indices := durations[item.ReportingFrequency]
 		indices = append(indices, i)
 		durations[item.ReportingFrequency] = indices
 	}
 
-	for d, indices := range durations {
-		duration := d // save the value for the closure below...
-		time.AfterFunc(duration, func() { report(duration, indices) })
+	for d, i := range durations {
+		duration := d // save the values for the closure below...
+		indices := i
+		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
 
 	return true
 }
 
-func report(duration time.Duration, indices []int) {
+func (this *metric) report(duration time.Duration, indices []int) {
 	now := time.Now()
 	snapshot := make([]Measurement, len(indices), len(indices))
 
@@ -63,54 +117,43 @@ func report(duration time.Duration, indices []int) {
 		snapshot[i] = Measurement{
 			Index:    index,
 			Captured: now,
-			Value:    atomic.LoadInt64(&metrics[index]),
+			Value:    atomic.LoadInt64(&this.metrics[index]),
 		}
 	}
 
-	queue <- snapshot
+	this.queue <- snapshot
 
-	if started > 0 {
-		time.AfterFunc(duration, func() { report(duration, indices) })
+	if this.started > 0 {
+		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-func StopMeasuring() {
-	started = 0
+func (this *metric) StopMeasuring() {
+	this.started = 0
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-func Count(index int) bool {
-	if index < 0 || len(metrics) <= index {
+func (this *metric) Count(index int) bool {
+	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
 
-	atomic.AddInt64(&metrics[index], 1)
+	atomic.AddInt64(&this.metrics[index], 1)
 	return true
 }
 
-func Measure(index int, measurement int64) bool {
-	if index < 0 || len(metrics) <= index {
+func (this *metric) Measure(index int, measurement int64) bool {
+	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
 
-	atomic.StoreInt64(&metrics[index], measurement)
+	atomic.StoreInt64(&this.metrics[index], measurement)
 	return true
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-type metricInfo struct {
-	Name               string
-	ReportingFrequency time.Duration
-}
-
-type Measurement struct {
-	Index    int
-	Captured time.Time
-	Value    int64
+func init() {
+	log.SetOutput(ioutil.Discard)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
