@@ -61,10 +61,11 @@ func TestConventions(t *testing.T) {
 
 		time.Sleep(time.Millisecond * 3)
 
-		Convey("Counts and Measurements should not be accepted", func() {
+		Convey("Counts and Measurements should no longer be accepted", func() {
 			So(len(outbound), ShouldBeGreaterThan, 0)
 
-			for measurements := range outbound {
+			for x := 0; x < len(outbound); x++ {
+				measurements := <-outbound
 				for _, measurement := range measurements {
 					So(measurement.Value, ShouldEqual, 0) // no counting
 				}
