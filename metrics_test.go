@@ -59,17 +59,13 @@ func TestConventions(t *testing.T) {
 			tracker.Count(a)
 		}
 
-		time.Sleep(time.Millisecond * 3)
+		time.Sleep(time.Millisecond * 5)
 
-		Convey("Counts and Measurements should no longer be accepted", func() {
-			So(len(outbound), ShouldBeGreaterThan, 0)
-
-			for x := 0; x < len(outbound); x++ {
-				measurements := <-outbound
-				for _, measurement := range measurements {
-					So(measurement.Value, ShouldEqual, 0) // no counting
-				}
-			}
+		Convey("Counts and Measurements should no longer be accepted, so the value of the metric should remain at 0", func() {
+			So(len(outbound), ShouldEqual, 1)
+			measurements := <-outbound
+			So(len(measurements), ShouldEqual, 1)
+			So(measurements[0].Value, ShouldEqual, 0)
 		})
 	})
 }
@@ -95,13 +91,21 @@ func TestMetrics(t *testing.T) {
 
 		tracker.StartMeasuring()
 
+		// first two measurements
 		for x := int64(0); x < 5; x++ {
 			tracker.Count(a)
 			tracker.Measure(b, x*x)
 		}
+		time.Sleep(time.Millisecond * 2)
+
+		// last two measurements
+		for x := int64(0); x < 5; x++ {
+			tracker.Count(a)
+			tracker.Measure(b, x*x+1)
+		}
+		time.Sleep(time.Millisecond * 2)
 
 		tracker.StopMeasuring()
-		time.Sleep(time.Millisecond * 2)
 
 		after := time.Now()
 
@@ -120,20 +124,41 @@ func TestMetrics(t *testing.T) {
 
 		// Assert...
 
-		Convey("We should have at least 2 measurements", func() {
-			So(len(measurements), ShouldBeGreaterThanOrEqualTo, 2)
+		Convey("We should have at least 5 measurements, and they should be in chronological order", func() {
+			So(len(measurements), ShouldBeGreaterThanOrEqualTo, 5)
+			var (
+				first  = measurements[0].Captured
+				second = measurements[1].Captured
+				third  = measurements[2].Captured
+				fourth = measurements[3].Captured
+				fifth  = measurements[4].Captured
+			)
+			So([]time.Time{before, first, second, third, fourth, fifth, after}, ShouldBeChronological)
 		})
 
-		Convey("The first measurement should reflect the counted value", func() {
-			So([]time.Time{before, measurements[0].Captured, after}, ShouldBeChronological)
+		Convey("The first measurement should reflect the _counted_ value", func() {
 			So(measurements[0].Index, ShouldEqual, 0)
 			So(measurements[0].Value, ShouldEqual, 5)
 		})
 
-		Convey("The second measurement should reflect the measured value", func() {
-			So([]time.Time{before, measurements[1].Captured, after}, ShouldBeChronological)
+		Convey("The second measurement should reflect the _measured_ value", func() {
 			So(measurements[1].Index, ShouldEqual, 1)
 			So(measurements[1].Value, ShouldEqual, 16)
+		})
+
+		Convey("The third measurement should reflect the _counted_ value", func() {
+			So(measurements[2].Index, ShouldEqual, 0)
+			So(measurements[2].Value, ShouldEqual, 10)
+		})
+
+		Convey("The fourth measurement should reflect the _counted_ value", func() {
+			So(measurements[3].Index, ShouldEqual, 0)
+			So(measurements[3].Value, ShouldEqual, 10)
+		})
+
+		Convey("The fifth measurement should reflect the _measured_ value", func() {
+			So(measurements[4].Index, ShouldEqual, 1)
+			So(measurements[4].Value, ShouldEqual, 17)
 		})
 	})
 }

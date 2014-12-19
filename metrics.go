@@ -11,6 +11,7 @@ import (
 
 // Add registers a named metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup.
+// A negative return value indicates that the registration was unsuccessful.
 func Add(name string, reportingFrequency time.Duration) int {
 	return standard.Add(name, reportingFrequency)
 }
@@ -23,8 +24,8 @@ func RegisterChannelDestination(destination chan []Measurement) {
 
 // StartMeasuring signals to this library that all
 // registrations have been performed.
-func StartMeasuring() bool {
-	return standard.StartMeasuring()
+func StartMeasuring() {
+	standard.StartMeasuring()
 }
 
 // StopMeasuring turns measurement tracking off.
@@ -34,11 +35,13 @@ func StopMeasuring() {
 }
 
 // Count (automically) increments the metric at index by one.
+// A return value of false indicates the count could not occur.
 func Count(index int) bool {
 	return standard.Count(index)
 }
 
 // Measure (automically) sets the metric at the specified index to the specified measurement.
+// A return value of false indicates the count could not occur.
 func Measure(index int, measurement int64) bool {
 	return standard.Measure(index, measurement)
 }
@@ -87,10 +90,10 @@ func (this *metric) RegisterChannelDestination(destination chan []Measurement) {
 	this.queue = destination
 }
 
-func (this *metric) StartMeasuring() bool {
-	// if atomic.AddInt32(&this.started, 1) > 1 {
-	// 	return false
-	// }
+func (this *metric) StartMeasuring() {
+	if atomic.AddInt32(&this.started, 1) > 1 {
+		return
+	}
 
 	durations := map[time.Duration][]int{}
 	for i, item := range this.meta {
@@ -106,7 +109,6 @@ func (this *metric) StartMeasuring() bool {
 	}
 
 	this.started++
-	return true
 }
 
 func (this *metric) report(duration time.Duration, indices []int) {
@@ -124,9 +126,9 @@ func (this *metric) report(duration time.Duration, indices []int) {
 
 	this.queue <- snapshot
 
-	// if this.started > 0 {
-	time.AfterFunc(duration, func() { this.report(duration, indices) })
-	// }
+	if this.started > 0 {
+		time.AfterFunc(duration, func() { this.report(duration, indices) })
+	}
 }
 
 func (this *metric) StopMeasuring() {
