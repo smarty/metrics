@@ -49,7 +49,7 @@ func Measure(index int, measurement int64) bool {
 // Measurement is the struct that is sent onto the outbound channel for
 // publishing to whatever backend service that happens to be configured.
 type Measurement struct {
-	Index    int
+	ID       int
 	Captured time.Time
 	Value    int64
 }
@@ -58,7 +58,7 @@ type Measurement struct {
 
 var standard = New()
 
-type metric struct {
+type container struct {
 	metrics []int64
 	meta    []metricInfo
 	started int32
@@ -70,11 +70,11 @@ type metricInfo struct {
 	ReportingFrequency time.Duration
 }
 
-func New() *metric {
-	return &metric{}
+func New() *container {
+	return &container{}
 }
 
-func (this *metric) Add(name string, reportingFrequency time.Duration) int {
+func (this *container) Add(name string, reportingFrequency time.Duration) int {
 	if atomic.LoadInt32(&this.started) > 0 {
 		return -1
 	}
@@ -86,11 +86,11 @@ func (this *metric) Add(name string, reportingFrequency time.Duration) int {
 	return len(this.metrics) - 1
 }
 
-func (this *metric) RegisterChannelDestination(destination chan []Measurement) {
+func (this *container) RegisterChannelDestination(destination chan []Measurement) {
 	this.queue = destination
 }
 
-func (this *metric) StartMeasuring() {
+func (this *container) StartMeasuring() {
 	if atomic.AddInt32(&this.started, 1) > 1 {
 		return
 	}
@@ -111,14 +111,14 @@ func (this *metric) StartMeasuring() {
 	this.started++
 }
 
-func (this *metric) report(duration time.Duration, indices []int) {
+func (this *container) report(duration time.Duration, indices []int) {
 	now := time.Now()
 	snapshot := make([]Measurement, len(indices), len(indices))
 
 	for i := 0; i < len(indices); i++ {
 		index := indices[i]
 		snapshot[i] = Measurement{
-			Index:    index,
+			ID:       index,
 			Captured: now,
 			Value:    atomic.LoadInt64(&this.metrics[index]),
 		}
@@ -131,11 +131,11 @@ func (this *metric) report(duration time.Duration, indices []int) {
 	}
 }
 
-func (this *metric) StopMeasuring() {
+func (this *container) StopMeasuring() {
 	this.started = 0
 }
 
-func (this *metric) Count(index int) bool {
+func (this *container) Count(index int) bool {
 	if index < 0 || len(this.metrics) <= index || this.started < 1 {
 		return false
 	}
@@ -144,7 +144,7 @@ func (this *metric) Count(index int) bool {
 	return true
 }
 
-func (this *metric) Measure(index int, measurement int64) bool {
+func (this *container) Measure(index int, measurement int64) bool {
 	if index < 0 || len(this.metrics) <= index {
 		return false
 	}

@@ -13,15 +13,15 @@ func TestConventions(t *testing.T) {
 	log.SetOutput(tWriter{t})
 
 	Convey("When tracking has already been started", t, func() {
-		tracker := New()
+		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		tracker.RegisterChannelDestination(outbound)
-		tracker.StartMeasuring()
+		metrics.RegisterChannelDestination(outbound)
+		metrics.StartMeasuring()
 
 		Convey("Calls to Add should not result in successful registration", func() {
-			a := tracker.Add("a", time.Millisecond)
-			wasCounted := tracker.Count(a)
+			a := metrics.Add("a", time.Millisecond)
+			wasCounted := metrics.Count(a)
 
 			Convey("Which means that the calls should return a 'negative' responses", func() {
 				So(a, ShouldBeLessThan, 0)
@@ -30,11 +30,11 @@ func TestConventions(t *testing.T) {
 
 			Convey("And the metric should not be tracked or published", func() {
 				for x := int64(0); x < 5; x++ {
-					tracker.Count(a)
-					tracker.Measure(a, x)
+					metrics.Count(a)
+					metrics.Measure(a, x)
 				}
 
-				tracker.StopMeasuring()
+				metrics.StopMeasuring()
 				time.Sleep(time.Millisecond * 2)
 
 				So(len(outbound), ShouldEqual, 0)
@@ -42,21 +42,21 @@ func TestConventions(t *testing.T) {
 		})
 
 		Reset(func() {
-			tracker.StopMeasuring()
+			metrics.StopMeasuring()
 		})
 	})
 
 	Convey("When tracking has been stopped", t, func() {
-		tracker := New()
+		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		tracker.RegisterChannelDestination(outbound)
-		a := tracker.Add("a", time.Millisecond)
-		tracker.StartMeasuring()
-		tracker.StopMeasuring()
+		metrics.RegisterChannelDestination(outbound)
+		a := metrics.Add("a", time.Millisecond)
+		metrics.StartMeasuring()
+		metrics.StopMeasuring()
 
 		for x := int64(0); x < 5; x++ {
-			tracker.Count(a)
+			metrics.Count(a)
 		}
 
 		time.Sleep(time.Millisecond * 5)
@@ -77,35 +77,35 @@ func TestMetrics(t *testing.T) {
 
 		// Setup...
 
-		tracker := New()
+		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		tracker.RegisterChannelDestination(outbound)
+		metrics.RegisterChannelDestination(outbound)
 
-		a := tracker.Add("a", time.Millisecond)
-		b := tracker.Add("b", time.Millisecond*2)
+		a := metrics.Add("a", time.Millisecond)
+		b := metrics.Add("b", time.Millisecond*2)
 
 		// Action...
 
 		before := time.Now()
 
-		tracker.StartMeasuring()
+		metrics.StartMeasuring()
 
 		// first two measurements
 		for x := int64(0); x < 5; x++ {
-			tracker.Count(a)
-			tracker.Measure(b, x*x)
+			metrics.Count(a)
+			metrics.Measure(b, x*x)
 		}
 		time.Sleep(time.Millisecond * 2)
 
 		// last two measurements
 		for x := int64(0); x < 5; x++ {
-			tracker.Count(a)
-			tracker.Measure(b, x*x+1)
+			metrics.Count(a)
+			metrics.Measure(b, x*x+1)
 		}
 		time.Sleep(time.Millisecond * 2)
 
-		tracker.StopMeasuring()
+		metrics.StopMeasuring()
 
 		after := time.Now()
 
@@ -137,27 +137,27 @@ func TestMetrics(t *testing.T) {
 		})
 
 		Convey("The first measurement should reflect the _counted_ value", func() {
-			So(measurements[0].Index, ShouldEqual, 0)
+			So(measurements[0].ID, ShouldEqual, 0)
 			So(measurements[0].Value, ShouldEqual, 5)
 		})
 
 		Convey("The second measurement should reflect the _measured_ value", func() {
-			So(measurements[1].Index, ShouldEqual, 1)
+			So(measurements[1].ID, ShouldEqual, 1)
 			So(measurements[1].Value, ShouldEqual, 16)
 		})
 
 		Convey("The third measurement should reflect the _counted_ value", func() {
-			So(measurements[2].Index, ShouldEqual, 0)
+			So(measurements[2].ID, ShouldEqual, 0)
 			So(measurements[2].Value, ShouldEqual, 10)
 		})
 
 		Convey("The fourth measurement should reflect the _counted_ value", func() {
-			So(measurements[3].Index, ShouldEqual, 0)
+			So(measurements[3].ID, ShouldEqual, 0)
 			So(measurements[3].Value, ShouldEqual, 10)
 		})
 
 		Convey("The fifth measurement should reflect the _measured_ value", func() {
-			So(measurements[4].Index, ShouldEqual, 1)
+			So(measurements[4].ID, ShouldEqual, 1)
 			So(measurements[4].Value, ShouldEqual, 17)
 		})
 	})
