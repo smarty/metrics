@@ -18,8 +18,15 @@ func New() *container {
 	return &container{}
 }
 
-// TODO: Add signature needs to know if it's a counter or a gauge
-func (this *container) Add(name string, reportingFrequency time.Duration) int {
+func (this *container) AddCounter(name string, reportingFrequency time.Duration) int {
+	return this.add(name, CounterMetric, reportingFrequency)
+}
+
+func (this *container) AddGauge(name string, reportingFrequency time.Duration) int {
+	return this.add(name, GaugeMetric, reportingFrequency)
+}
+
+func (this *container) add(name string, metricType int, reportingFrequency time.Duration) int {
 	if atomic.LoadInt32(&this.started) > 0 {
 		return MetricConflict
 	}
@@ -35,7 +42,7 @@ func (this *container) Add(name string, reportingFrequency time.Duration) int {
 	}
 
 	this.metrics = append(this.metrics, int64(0))
-	info := metricInfo{Name: name, ReportingFrequency: reportingFrequency}
+	info := metricInfo{Name: name, MetricType: metricType, ReportingFrequency: reportingFrequency}
 	this.meta = append(this.meta, info)
 	return len(this.metrics) - 1
 }

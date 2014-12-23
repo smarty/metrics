@@ -7,8 +7,15 @@ const MetricConflict = -1
 // Add registers a named metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup.
 // A negative return value indicates that the registration was unsuccessful.
-func Add(name string, reportingFrequency time.Duration) int {
-	return standard.Add(name, reportingFrequency)
+func AddCounter(name string, reportingFrequency time.Duration) int {
+	return standard.AddCounter(name, reportingFrequency)
+}
+
+// Add registers a named metric along with the desired reporting frequency.
+// The function is meant to be called *only* at application startup.
+// A negative return value indicates that the registration was unsuccessful.
+func AddGauge(name string, reportingFrequency time.Duration) int {
+	return standard.AddGauge(name, reportingFrequency)
 }
 
 // StartMeasuring signals to this library that all

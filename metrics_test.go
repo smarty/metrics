@@ -15,9 +15,9 @@ func TestConventions(t *testing.T) {
 	Convey("When a metric name has already been taken", t, func() {
 		metrics := New()
 
-		success0 := metrics.Add("a", time.Millisecond)
-		success1 := metrics.Add("b", time.Millisecond)
-		failure := metrics.Add("a", time.Millisecond)
+		success0 := metrics.AddCounter("a", time.Millisecond)
+		success1 := metrics.AddCounter("b", time.Millisecond)
+		failure := metrics.AddCounter("a", time.Millisecond)
 
 		Convey("The successful calls should result in non-negative results, indicating successful registration", func() {
 			So(success0, ShouldEqual, 0)
@@ -32,8 +32,8 @@ func TestConventions(t *testing.T) {
 	Convey("When a metric is provided an invalid reporting frequency", t, func() {
 		metrics := New()
 
-		failure0 := metrics.Add("b", time.Duration(0))
-		failure1 := metrics.Add("a", time.Duration(-1))
+		failure0 := metrics.AddCounter("b", time.Duration(0))
+		failure1 := metrics.AddCounter("a", time.Duration(-1))
 
 		Convey("The returned index should be negative, indicating rejection of the duplicate metric", func() {
 			So(failure0, ShouldEqual, -1)
@@ -48,8 +48,8 @@ func TestConventions(t *testing.T) {
 		metrics.registerChannelDestination(outbound)
 		metrics.StartMeasuring()
 
-		Convey("Calls to Add should not result in successful registration", func() {
-			a := metrics.Add("a", time.Millisecond)
+		Convey("Calls to AddCounter/AddGauge should not result in successful registration", func() {
+			a := metrics.AddCounter("a", time.Millisecond)
 			wasCounted := metrics.Count(a)
 
 			Convey("Which means that the calls should return a 'negative' responses", func() {
@@ -88,8 +88,8 @@ func TestMetrics(t *testing.T) {
 		outbound := make(chan []Measurement, 10)
 		metrics.registerChannelDestination(outbound)
 
-		a := metrics.Add("a", time.Millisecond)
-		b := metrics.Add("b", time.Millisecond*2)
+		a := metrics.AddCounter("a", time.Millisecond)
+		b := metrics.AddGauge("b", time.Millisecond*2)
 
 		// Action...
 
