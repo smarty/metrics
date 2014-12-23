@@ -1,7 +1,0 @@
-func listenToMeasurementQueue() {
-	// read everything possible from the channel until empty
-	// limit of 300 measurements per HTTP request
-	// convert into a single HTTP request
-	// send HTTP request (retry N times) and toss if unsuccessful
-	// multiple HTTP requests concurrently???
-}
