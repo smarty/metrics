@@ -74,29 +74,6 @@ func TestConventions(t *testing.T) {
 			metrics.StopMeasuring()
 		})
 	})
-
-	Convey("When tracking has been stopped", t, func() {
-		metrics := New()
-
-		outbound := make(chan []Measurement, 10)
-		metrics.RegisterChannelDestination(outbound)
-		a := metrics.Add("a", time.Millisecond)
-		metrics.StartMeasuring()
-		metrics.StopMeasuring()
-
-		for x := int64(0); x < 5; x++ {
-			metrics.Count(a)
-		}
-
-		time.Sleep(time.Millisecond * 5)
-
-		Convey("Counts and Measurements should no longer be accepted, so the value of the metric should remain at 0", func() {
-			So(len(outbound), ShouldEqual, 1)
-			measurements := <-outbound
-			So(len(measurements), ShouldEqual, 1)
-			So(measurements[0].Value, ShouldEqual, 0)
-		})
-	})
 }
 
 func TestMetrics(t *testing.T) {

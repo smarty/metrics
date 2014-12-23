@@ -116,8 +116,6 @@ func (this *container) StartMeasuring() {
 		indices := i  // the closure below...
 		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
-
-	this.started++
 }
 
 func (this *container) report(duration time.Duration, indices []int) {
@@ -135,17 +133,17 @@ func (this *container) report(duration time.Duration, indices []int) {
 
 	this.queue <- snapshot
 
-	if this.started > 0 {
+	if atomic.LoadInt32(&this.started) > 0 {
 		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
 }
 
 func (this *container) StopMeasuring() {
-	this.started = 0
+	atomic.SwapInt32(&this.started, 0)
 }
 
 func (this *container) Count(index int) bool {
-	if index < 0 || len(this.metrics) <= index || this.started < 1 {
+	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
 
