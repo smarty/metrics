@@ -12,6 +12,35 @@ import (
 func TestConventions(t *testing.T) {
 	log.SetOutput(tWriter{t})
 
+	Convey("When a metric name has already been taken", t, func() {
+		metrics := New()
+
+		success0 := metrics.Add("a", time.Millisecond)
+		success1 := metrics.Add("b", time.Millisecond)
+		failure := metrics.Add("a", time.Millisecond)
+
+		Convey("The successful calls should result in non-negative results, indicating successful registration", func() {
+			So(success0, ShouldEqual, 0)
+			So(success1, ShouldEqual, 1)
+		})
+
+		Convey("The duplicate registration should result in a non-negative result, indicating rejection of the duplicate metric", func() {
+			So(failure, ShouldEqual, -1)
+		})
+	})
+
+	Convey("When a metric is provided an invalid reporting frequency", t, func() {
+		metrics := New()
+
+		failure0 := metrics.Add("b", time.Duration(0))
+		failure1 := metrics.Add("a", time.Duration(-1))
+
+		Convey("The returned index should be negative, indicating rejection of the duplicate metric", func() {
+			So(failure0, ShouldEqual, -1)
+			So(failure1, ShouldEqual, -1)
+		})
+	})
+
 	Convey("When tracking has already been started", t, func() {
 		metrics := New()
 

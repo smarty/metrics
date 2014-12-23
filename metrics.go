@@ -79,7 +79,16 @@ func (this *container) Add(name string, reportingFrequency time.Duration) int {
 		return -1
 	}
 
-	// TODO: if name already taken; if reporting frequency is zero or negative
+	if int64(reportingFrequency) <= 0 {
+		return -1
+	}
+
+	for _, metric := range this.meta {
+		if metric.Name == name {
+			return -1
+		}
+	}
+
 	this.metrics = append(this.metrics, int64(0))
 	info := metricInfo{Name: name, ReportingFrequency: reportingFrequency}
 	this.meta = append(this.meta, info)
@@ -103,8 +112,8 @@ func (this *container) StartMeasuring() {
 	}
 
 	for d, i := range durations {
-		duration := d // save the values for the closure below...
-		indices := i
+		duration := d // save the values for
+		indices := i  // the closure below...
 		time.AfterFunc(duration, func() { this.report(duration, indices) })
 	}
 
