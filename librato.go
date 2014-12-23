@@ -3,7 +3,6 @@ package metrics
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"sync/atomic"
 )
@@ -21,13 +20,17 @@ type Librato struct {
 func WithLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	// TODO: validate inputs
 
+	// TODO: all HTTP-related timeouts
+	transport := &http.Transport{DisableCompression: true}
+	client := &http.Client{Transport: transport}
+
 	return &Librato{
 		email:       email,
 		key:         key,
 		hostname:    hostname,
 		maxRequests: maxRequests,
 		buffer:      map[int]Measurement{},
-		client:      &http.Client{Transport: &http.Transport{}}, // TODO: all HTTP-related timeouts
+		client:      client,
 	}
 }
 
@@ -66,15 +69,7 @@ func (this *Librato) publish() {
 			atomic.AddInt32(&this.activeRequests, 1)
 
 			go func() {
-				// request.ContentLength = 74
-				// dump, _ := httputil.DumpRequest(request, true)
-				// fmt.Println(string(dump))
-
-				response, _ := this.client.Do(request)
-				fmt.Println(response.Status)
-				responseBody, _ := ioutil.ReadAll(response.Body)
-				fmt.Println(string(responseBody))
-
+				this.client.Do(request) // ignore errors
 				atomic.AddInt32(&this.activeRequests, -1)
 			}()
 		}
@@ -82,11 +77,9 @@ func (this *Librato) publish() {
 }
 
 func (this *Librato) buildRequest(body *bytes.Buffer) *http.Request {
-	// request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
-	request, _ := http.NewRequest("POST", "http://localhost:8080", body)
+	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
 	request.SetBasicAuth(this.email, this.key)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Set("User-Agent", "Test-Agent")
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return request
 }
 
@@ -95,7 +88,7 @@ func (this *Librato) serializeNext() *bytes.Buffer {
 	body := bytes.NewBuffer([]byte{})
 
 	if len(this.hostname) > 0 {
-		fmt.Fprintf(body, "source=%s\n", this.hostname)
+		fmt.Fprintf(body, "source=%s&", this.hostname)
 	}
 
 	for index, metric := range this.buffer {
@@ -130,5 +123,5 @@ func countBatches(itemCount int) int {
 
 // const maxMetricsPerBatch = 256
 const maxMetricsPerBatch = 3
-const counterFormat = "counters[%d][name]=%s\ncounters[%d][value]=%d\ncounters[%d][measure_time]=%d\n"
-const gaugeFormat = "gauges[%d][name]=%s\ngauges[%d][value]=%d\ngauges[%d][measure_time]=%d\n"
+const counterFormat = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
+const gaugeFormat = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
