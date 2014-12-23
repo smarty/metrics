@@ -1,6 +1,10 @@
 package metrics
 
-import "time"
+import (
+	"errors"
+	"os"
+	"time"
+)
 
 const MetricConflict = -1
 
@@ -47,3 +51,23 @@ func Measure(index int, measurement int64) bool {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+// StartLibrato configures a new metrics instance, specifies a number of Librato writers, and starts measuring.
+func StartLibrato(email, key string, queueCapacity, writers int) error {
+	if len(email) == 0 || len(key) == 0 || queueCapacity <= 0 || writers <= 0 {
+		return libratoConfigurationError
+	}
+
+	queue := make(chan []Measurement, queueCapacity)
+	RegisterChannelDestination(queue)
+
+	hostname, _ := os.Hostname()
+	librato := newLibrato(email, key, hostname, int32(writers))
+	go librato.Listen(queue)
+
+	StartMeasuring()
+
+	return nil
+}
+
+var libratoConfigurationError = errors.New("You must supply non-empty email address, non-empty key, and positive queueCapacity and positive writers.")

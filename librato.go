@@ -18,7 +18,7 @@ type Librato struct {
 	client         *http.Client
 }
 
-func WithLibrato(email, key, hostname string, maxRequests int32) *Librato {
+func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	// TODO: validate inputs
 
 	// TODO: all HTTP-related timeouts
