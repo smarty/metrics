@@ -8,5 +8,5 @@ type metricInfo struct {
 	ReportingFrequency time.Duration
 }
 
-const GaugeMetric = 1
 const CounterMetric = 1
+const GaugeMetric = 2

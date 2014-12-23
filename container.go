@@ -69,7 +69,7 @@ func (this *container) StopMeasuring() {
 	atomic.SwapInt32(&this.started, 0)
 }
 
-func (this *container) registerChannelDestination(queue chan []Measurement) {
+func (this *container) RegisterChannelDestination(queue chan []Measurement) {
 	this.queue = queue
 }
 func (this *container) report(duration time.Duration, indices []int) {

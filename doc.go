@@ -24,6 +24,10 @@ func StartMeasuring() {
 	standard.StartMeasuring()
 }
 
+func RegisterChannelDestination(queue chan []Measurement) {
+	standard.RegisterChannelDestination(queue)
+}
+
 // StopMeasuring turns measurement tracking off.
 // It can be turned on again by calling StartMeasuring.
 func StopMeasuring() {

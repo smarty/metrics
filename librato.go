@@ -3,7 +3,7 @@ package metrics
 import (
 	"bytes"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"sync/atomic"
 )
@@ -61,22 +61,42 @@ func (this *Librato) publish() {
 		}
 
 		for i := int32(0); i < required; i++ {
-			request := this.buildRequest(this.serializeNext())
+			body := this.serializeNext()
+			request := this.buildRequest(body)
 			atomic.AddInt32(&this.activeRequests, 1)
-			go this.client.Do(request)
+
+			go func() {
+				// request.ContentLength = 74
+				// dump, _ := httputil.DumpRequest(request, true)
+				// fmt.Println(string(dump))
+
+				response, _ := this.client.Do(request)
+				fmt.Println(response.Status)
+				responseBody, _ := ioutil.ReadAll(response.Body)
+				fmt.Println(string(responseBody))
+
+				atomic.AddInt32(&this.activeRequests, -1)
+			}()
 		}
 	}
 }
 
-func (this *Librato) buildRequest(body io.Reader) *http.Request {
-	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
+func (this *Librato) buildRequest(body *bytes.Buffer) *http.Request {
+	// request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
+	request, _ := http.NewRequest("POST", "http://localhost:8080", body)
+	request.SetBasicAuth(this.email, this.key)
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("User-Agent", "Test-Agent")
 	return request
 }
 
-func (this *Librato) serializeNext() io.Reader {
+func (this *Librato) serializeNext() *bytes.Buffer {
 	written, counterIndex, gaugeIndex := 0, 0, 0
 	body := bytes.NewBuffer([]byte{})
-	fmt.Fprintf(body, "source=%s\n", this.hostname)
+
+	if len(this.hostname) > 0 {
+		fmt.Fprintf(body, "source=%s\n", this.hostname)
+	}
 
 	for index, metric := range this.buffer {
 		meta := standard.meta[index]
@@ -108,6 +128,7 @@ func countBatches(itemCount int) int {
 	}
 }
 
-const maxMetricsPerBatch = 256
+// const maxMetricsPerBatch = 256
+const maxMetricsPerBatch = 3
 const counterFormat = "counters[%d][name]=%s\ncounters[%d][value]=%d\ncounters[%d][measure_time]=%d\n"
 const gaugeFormat = "gauges[%d][name]=%s\ngauges[%d][value]=%d\ngauges[%d][measure_time]=%d\n"

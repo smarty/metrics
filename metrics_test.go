@@ -45,7 +45,7 @@ func TestConventions(t *testing.T) {
 		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		metrics.registerChannelDestination(outbound)
+		metrics.RegisterChannelDestination(outbound)
 		metrics.StartMeasuring()
 
 		Convey("Calls to AddCounter/AddGauge should not result in successful registration", func() {
@@ -86,7 +86,7 @@ func TestMetrics(t *testing.T) {
 		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		metrics.registerChannelDestination(outbound)
+		metrics.RegisterChannelDestination(outbound)
 
 		a := metrics.AddCounter("a", time.Millisecond)
 		b := metrics.AddGauge("b", time.Millisecond*2)
