@@ -3,6 +3,7 @@ package metrics
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"sync/atomic"
 )
@@ -58,32 +59,32 @@ func (this *Librato) publish() {
 		}
 
 		// how many requests would we need to take care of all of the items
-		required := int32(countBatches(len(this.buffer)))
-		if required > available {
-			required = available // not enough open/available lanes to accomodate all the requests;
+		needed := int32(countBatches(len(this.buffer)))
+		if needed > available {
+			needed = available // not enough open/available lanes to accomodate all the requests
 		}
 
-		for i := int32(0); i < required; i++ {
+		for i := int32(0); i < needed; i++ {
 			body := this.serializeNext()
 			request := this.buildRequest(body)
 			atomic.AddInt32(&this.activeRequests, 1)
 
 			go func() {
-				this.client.Do(request) // ignore errors
+				this.client.Do(request) // completely ignore response
 				atomic.AddInt32(&this.activeRequests, -1)
 			}()
 		}
 	}
 }
-
-func (this *Librato) buildRequest(body *bytes.Buffer) *http.Request {
-	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
-	request.SetBasicAuth(this.email, this.key)
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return request
+func countBatches(itemCount int) int {
+	remainder := itemCount % maxMetricsPerBatch
+	if remainder == 0 {
+		return itemCount / maxMetricsPerBatch
+	} else {
+		return itemCount/maxMetricsPerBatch + 1
+	}
 }
-
-func (this *Librato) serializeNext() *bytes.Buffer {
+func (this *Librato) serializeNext() io.Reader {
 	written, counterIndex, gaugeIndex := 0, 0, 0
 	body := bytes.NewBuffer([]byte{})
 
@@ -111,17 +112,14 @@ func (this *Librato) serializeNext() *bytes.Buffer {
 
 	return body
 }
-
-func countBatches(itemCount int) int {
-	remainder := itemCount % maxMetricsPerBatch
-	if remainder == 0 {
-		return itemCount / maxMetricsPerBatch
-	} else {
-		return itemCount/maxMetricsPerBatch + 1
-	}
+func (this *Librato) buildRequest(body io.Reader) *http.Request {
+	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
+	request.SetBasicAuth(this.email, this.key)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("User-Agent", "") // don't send a user agent (empty = remove it completely from the request)
+	return request
 }
 
-// const maxMetricsPerBatch = 256
-const maxMetricsPerBatch = 3
+const maxMetricsPerBatch = 256
 const counterFormat = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
 const gaugeFormat = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
