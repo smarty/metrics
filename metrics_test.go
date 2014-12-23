@@ -45,7 +45,7 @@ func TestConventions(t *testing.T) {
 		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		metrics.RegisterChannelDestination(outbound)
+		metrics.registerChannelDestination(outbound)
 		metrics.StartMeasuring()
 
 		Convey("Calls to Add should not result in successful registration", func() {
@@ -86,7 +86,7 @@ func TestMetrics(t *testing.T) {
 		metrics := New()
 
 		outbound := make(chan []Measurement, 10)
-		metrics.RegisterChannelDestination(outbound)
+		metrics.registerChannelDestination(outbound)
 
 		a := metrics.Add("a", time.Millisecond)
 		b := metrics.Add("b", time.Millisecond*2)
