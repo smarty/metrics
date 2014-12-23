@@ -17,6 +17,8 @@ type container struct {
 func New() *container {
 	return &container{}
 }
+
+// TODO: Add signature needs to know if it's a counter or a gauge
 func (this *container) Add(name string, reportingFrequency time.Duration) int {
 	if atomic.LoadInt32(&this.started) > 0 {
 		return MetricConflict
