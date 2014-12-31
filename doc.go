@@ -44,6 +44,12 @@ func Count(index int) bool {
 	return standard.Count(index)
 }
 
+// Count (automically) increments the metric at index by the number provided.
+// A return value of false indicates the count could not occur.
+func CountN(index int, increment int64) bool {
+	return standard.CountN(index, increment)
+}
+
 // Measure (automically) sets the metric at the specified index to the specified measurement.
 // A return value of false indicates the count could not occur.
 func Measure(index int, measurement int64) bool {

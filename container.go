@@ -93,13 +93,17 @@ func (this *container) report(duration time.Duration, indices []int) {
 }
 
 func (this *container) Count(index int) bool {
+	return this.CountN(index, 1)
+}
+func (this *container) CountN(index int, increment int64) bool {
 	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
 
-	atomic.AddInt64(&this.metrics[index], 1)
+	atomic.AddInt64(&this.metrics[index], increment)
 	return true
 }
+
 func (this *container) Measure(index int, measurement int64) bool {
 	if index < 0 || len(this.metrics) <= index {
 		return false
