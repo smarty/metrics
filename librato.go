@@ -95,7 +95,7 @@ func (this *Librato) serializeNext() io.Reader {
 	for index, metric := range this.buffer {
 		meta := standard.meta[index]
 		unixTime := metric.Captured.Unix()
-		if meta.MetricType == CounterMetric {
+		if meta.MetricType == counterMetricType {
 			fmt.Fprintf(body, counterFormat, counterIndex, meta.Name, counterIndex, metric.Value, counterIndex, unixTime)
 			counterIndex++
 		} else {

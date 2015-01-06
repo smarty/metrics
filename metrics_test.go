@@ -50,6 +50,7 @@ func TestConventions(t *testing.T) {
 
 		Convey("Calls to AddCounter/AddGauge should not result in successful registration", func() {
 			a := metrics.AddCounter("a", time.Millisecond)
+			b := metrics.AddGauge("b", time.Millisecond)
 			wasCounted := metrics.Count(a)
 
 			Convey("Which means that the calls should return a 'negative' responses", func() {
@@ -60,7 +61,7 @@ func TestConventions(t *testing.T) {
 			Convey("And the metric should not be tracked or published", func() {
 				for x := int64(0); x < 5; x++ {
 					metrics.Count(a)
-					metrics.Measure(a, x)
+					metrics.Measure(b, x)
 				}
 
 				metrics.StopMeasuring()

@@ -18,15 +18,15 @@ func New() *container {
 	return &container{}
 }
 
-func (this *container) AddCounter(name string, reportingFrequency time.Duration) int {
-	return this.add(name, CounterMetric, reportingFrequency)
+func (this *container) AddCounter(name string, reportingFrequency time.Duration) CounterMetric {
+	return CounterMetric(this.add(name, counterMetricType, reportingFrequency))
 }
 
-func (this *container) AddGauge(name string, reportingFrequency time.Duration) int {
-	return this.add(name, GaugeMetric, reportingFrequency)
+func (this *container) AddGauge(name string, reportingFrequency time.Duration) GaugeMetric {
+	return GaugeMetric(this.add(name, gaugeMetricType, reportingFrequency))
 }
 
-func (this *container) add(name string, metricType int, reportingFrequency time.Duration) int {
+func (this *container) add(name string, metricType uint8, reportingFrequency time.Duration) int {
 	if atomic.LoadInt32(&this.started) > 0 {
 		return MetricConflict
 	}
@@ -92,10 +92,11 @@ func (this *container) report(duration time.Duration, indices []int) {
 	}
 }
 
-func (this *container) Count(index int) bool {
-	return this.CountN(index, 1)
+func (this *container) Count(id CounterMetric) bool {
+	return this.CountN(id, 1)
 }
-func (this *container) CountN(index int, increment int64) bool {
+func (this *container) CountN(id CounterMetric, increment int64) bool {
+	index := int(id)
 	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
@@ -104,7 +105,8 @@ func (this *container) CountN(index int, increment int64) bool {
 	return true
 }
 
-func (this *container) Measure(index int, measurement int64) bool {
+func (this *container) Measure(id GaugeMetric, measurement int64) bool {
+	index := int(id)
 	if index < 0 || len(this.metrics) <= index {
 		return false
 	}

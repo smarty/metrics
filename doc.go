@@ -6,19 +6,22 @@ import (
 	"time"
 )
 
+type CounterMetric int
+type GaugeMetric int
+
 const MetricConflict = -1
 
 // Add registers a named metric along with the desired reporting frequency.
-// The function is meant to be called *only* at application startup.
+// The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
-func AddCounter(name string, reportingFrequency time.Duration) int {
+func AddCounter(name string, reportingFrequency time.Duration) CounterMetric {
 	return standard.AddCounter(name, reportingFrequency)
 }
 
 // Add registers a named metric along with the desired reporting frequency.
-// The function is meant to be called *only* at application startup.
+// The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
-func AddGauge(name string, reportingFrequency time.Duration) int {
+func AddGauge(name string, reportingFrequency time.Duration) GaugeMetric {
 	return standard.AddGauge(name, reportingFrequency)
 }
 
@@ -38,22 +41,22 @@ func StopMeasuring() {
 	standard.StopMeasuring()
 }
 
-// Count (automically) increments the metric at index by one.
+// Count (automically) increments the metric indicated by one.
 // A return value of false indicates the count could not occur.
-func Count(index int) bool {
-	return standard.Count(index)
+func Count(id CounterMetric) bool {
+	return standard.Count(id)
 }
 
-// Count (automically) increments the metric at index by the number provided.
+// Count (automically) increments the metric indicated by the number provided.
 // A return value of false indicates the count could not occur.
-func CountN(index int, increment int64) bool {
-	return standard.CountN(index, increment)
+func CountN(id CounterMetric, increment int64) bool {
+	return standard.CountN(id, increment)
 }
 
-// Measure (automically) sets the metric at the specified index to the specified measurement.
+// Measure (automically) sets the metric of the metric indicated to the value specified
 // A return value of false indicates the count could not occur.
-func Measure(index int, measurement int64) bool {
-	return standard.Measure(index, measurement)
+func Measure(id GaugeMetric, value int64) bool {
+	return standard.Measure(id, value)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
