@@ -105,17 +105,14 @@ func (this *container) CountN(id CounterMetric, increment int64) bool {
 	return true
 }
 func (this *container) RawCount(id CounterMetric, measurement int64) bool {
-	index := int(id)
-	if index < 0 || len(this.metrics) <= index {
-		return false
-	}
-
-	atomic.StoreInt64(&this.metrics[index], measurement)
-	return true
+	return this.measure(int(id), measurement)
 }
 
 func (this *container) Measure(id GaugeMetric, measurement int64) bool {
-	index := int(id)
+	return this.measure(int(id), measurement)
+}
+
+func (this *container) measure(index int, measurement int64) bool {
 	if index < 0 || len(this.metrics) <= index {
 		return false
 	}
