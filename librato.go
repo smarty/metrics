@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sync/atomic"
+	"time"
 )
 
 type Librato struct {
@@ -22,9 +23,11 @@ type Librato struct {
 func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	// TODO: validate inputs
 
-	// TODO: all HTTP-related timeouts
 	transport := &http.Transport{DisableCompression: true}
-	client := &http.Client{Transport: transport}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   time.Duration(time.Second * 15),
+	}
 
 	return &Librato{
 		email:       email,
@@ -32,7 +35,7 @@ func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 		hostname:    hostname,
 		maxRequests: maxRequests,
 		buffer:      map[int]Measurement{},
-		client:      client,
+		client:      client, // client.go "Clients are safe for concurrent use by multiple goroutines."
 	}
 }
 
