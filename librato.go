@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync/atomic"
 )
@@ -55,12 +56,14 @@ func (this *Librato) publish() {
 		active := atomic.LoadInt32(&this.activeRequests)
 		available := this.maxRequests - active
 		if available == 0 {
+			log.Printf("[INFO] (Metrics) Skipping publish. No open lanes. (Active/Max: %d/%d)\n", active, this.maxRequests)
 			break // all lanes are busy
 		}
 
 		// how many requests would we need to take care of all of the items
 		needed := int32(countBatches(len(this.buffer)))
 		if needed > available {
+			log.Printf("[INFO] (Metrics) Truncating publish. Not enough lanes to fully publish entire request. (Needed/Available: %d/%d)\n", needed, available)
 			needed = available // not enough open/available lanes to accomodate all the requests
 		}
 
@@ -70,8 +73,11 @@ func (this *Librato) publish() {
 			atomic.AddInt32(&this.activeRequests, 1)
 
 			go func() {
-				this.client.Do(request) // completely ignore response
+				_, err := this.client.Do(request)
 				atomic.AddInt32(&this.activeRequests, -1)
+				if err != nil {
+					log.Println("[WARN] (Metrics) Unable to complete HTTP request:", err)
+				}
 			}()
 		}
 	}
