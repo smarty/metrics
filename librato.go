@@ -23,10 +23,9 @@ type Librato struct {
 func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	// TODO: validate inputs
 
-	transport := &http.Transport{DisableCompression: true}
 	client := &http.Client{
-		Transport: transport,
-		Timeout:   time.Duration(time.Second * 15),
+		Transport: &http.Transport{DisableCompression: true},
+		Timeout:   time.Duration(time.Second * 10),
 	}
 
 	return &Librato{
