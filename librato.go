@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -75,11 +76,14 @@ func (this *Librato) publish() {
 			atomic.AddInt32(&this.activeRequests, 1)
 
 			go func() {
-				_, err := this.client.Do(request)
-				atomic.AddInt32(&this.activeRequests, -1)
-				if err != nil {
+				response, err := this.client.Do(request)
+				if response != nil && response.Body != nil {
+					io.Copy(ioutil.Discard, response.Body)
+					response.Body.Close()
+				} else if err != nil {
 					log.Println("[WARN] (Metrics) Unable to complete HTTP request:", err)
 				}
+				atomic.AddInt32(&this.activeRequests, -1)
 			}()
 		}
 	}
