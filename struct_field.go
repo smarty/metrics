@@ -7,12 +7,12 @@ import "sync/atomic"
 // values. This approach is similar to the one employed by the clock package
 // (see github.com/smartystreets/clock).
 type Metrics struct {
-	All map[int]int64
+	all map[int]int64
 }
 
 func Capture() *Metrics {
 	return &Metrics{
-		All: make(map[int]int64),
+		all: make(map[int]int64),
 	}
 }
 
@@ -45,21 +45,21 @@ func (this *Metrics) Measure(id GaugeMetric, value int64) bool {
 }
 
 func (this *Metrics) add(id int, increment int64) bool {
-	atomic.AddInt64(&this.All[id], increment)
+	atomic.AddInt64(&this.all[id], increment)
 	return true
 }
 
 func (this *Metrics) set(id int, value int64) bool {
-	atomic.StoreInt64(&this.All[id], value)
+	atomic.StoreInt64(&this.all[id], value)
 	return true
 }
 
 // Helper function for test assertions:
 func (this *Metrics) CounterValue(id CounterMetric) int64 {
-	return atomic.LoadInt64(&this.All[int(id)])
+	return atomic.LoadInt64(&this.all[int(id)])
 }
 
 // Helper function for test assertions:
 func (this *Metrics) GaugeValue(id GaugeMetric) int64 {
-	return atomic.LoadInt64(&this.All[int(id)])
+	return atomic.LoadInt64(&this.all[int(id)])
 }
