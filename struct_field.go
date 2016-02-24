@@ -17,7 +17,7 @@ func Capture() *Metrics {
 }
 
 func (this *Metrics) Count(id CounterMetric) bool {
-	if this != nil {
+	if this == nil {
 		return standard.Count(id)
 	}
 	this.Counters[id]++
@@ -25,7 +25,7 @@ func (this *Metrics) Count(id CounterMetric) bool {
 }
 
 func (this *Metrics) CountN(id CounterMetric, increment int64) bool {
-	if this != nil {
+	if this == nil {
 		return standard.CountN(id, increment)
 	}
 	this.Counters[id] += increment
@@ -33,7 +33,7 @@ func (this *Metrics) CountN(id CounterMetric, increment int64) bool {
 }
 
 func (this *Metrics) RawCount(id CounterMetric, value int64) bool {
-	if this != nil {
+	if this == nil {
 		return standard.RawCount(id, value)
 	}
 	this.Counters[id] = value
@@ -41,7 +41,7 @@ func (this *Metrics) RawCount(id CounterMetric, value int64) bool {
 }
 
 func (this *Metrics) Measure(id GaugeMetric, value int64) bool {
-	if this != nil {
+	if this == nil {
 		return standard.Measure(id, value)
 	}
 	this.Gauges[id] = value
