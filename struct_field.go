@@ -53,5 +53,18 @@ func (this *Metrics) set(id int, value int64) bool {
 }
 
 // Helper functions for test assertions:
-func (this *Metrics) CounterValue(id CounterMetric) int64 { return this.all[int(id)] }
-func (this *Metrics) GaugeValue(id GaugeMetric) int64     { return this.all[int(id)] }
+func (this *Metrics) CounterValue(id CounterMetric) int64 {
+	if this == nil {
+		return -1
+	}
+	return this.value(int(id))
+}
+func (this *Metrics) GaugeValue(id GaugeMetric) int64     {
+	if this == nil {
+		return -1
+	}
+	return this.value(int(id))
+}
+func (this *Metrics) value(id int) int64 {
+	return this.all[id]
+}
