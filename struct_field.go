@@ -12,7 +12,7 @@ type Metrics struct {
 func Capture() *Metrics {
 	return &Metrics{
 		Counters: make(map[CounterMetric]int64),
-		Gauges:   make(map[CounterMetric]int64),
+		Gauges:   make(map[GaugeMetric]int64),
 	}
 }
 
