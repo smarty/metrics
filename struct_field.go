@@ -1,7 +1,5 @@
 package metrics
 
-import "sync/atomic"
-
 // Metrics can be used as a struct field and overridden with the Capture
 // function in unit test setups to allow assertions on counted and measured
 // values. This approach is similar to the one employed by the clock package
@@ -45,21 +43,15 @@ func (this *Metrics) Measure(id GaugeMetric, value int64) bool {
 }
 
 func (this *Metrics) add(id int, increment int64) bool {
-	atomic.AddInt64(&this.all[id], increment)
+	this.all[id] += increment
 	return true
 }
 
 func (this *Metrics) set(id int, value int64) bool {
-	atomic.StoreInt64(&this.all[id], value)
+	this.all[id] = value
 	return true
 }
 
-// Helper function for test assertions:
-func (this *Metrics) CounterValue(id CounterMetric) int64 {
-	return atomic.LoadInt64(&this.all[int(id)])
-}
-
-// Helper function for test assertions:
-func (this *Metrics) GaugeValue(id GaugeMetric) int64 {
-	return atomic.LoadInt64(&this.all[int(id)])
-}
+// Helper functions for test assertions:
+func (this *Metrics) CounterValue(id CounterMetric) int64 { return this.all[int(id)] }
+func (this *Metrics) GaugeValue(id GaugeMetric) int64     { return this.all[int(id)] }
