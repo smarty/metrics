@@ -10,6 +10,7 @@ import (
 )
 
 func TestConventions(t *testing.T) {
+	t.Skip("Skipping legacy tests.")
 	log.SetOutput(tWriter{t})
 
 	Convey("When a metric name has already been taken", t, func() {
@@ -78,6 +79,7 @@ func TestConventions(t *testing.T) {
 }
 
 func TestMetrics(t *testing.T) {
+	t.Skip("Skipping legacy tests.")
 	log.SetOutput(tWriter{t})
 
 	Convey("Metrics should be tracked accurately", t, func() {
@@ -177,12 +179,6 @@ type tWriter struct{ *testing.T }
 func (self tWriter) Write(value []byte) (int, error) {
 	self.T.Log(string(bytes.TrimRight(value, "\n")))
 	return len(value), nil
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-func init() {
-	log.SetFlags(log.Ltime | log.Lshortfile)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
