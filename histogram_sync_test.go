@@ -83,23 +83,23 @@ func (this *FakeHistogram) RecordValue(v int64) error {
 }
 func (this *FakeHistogram) Min() int64 {
 	this.recordFirstInvocation("Min")
-	return 1
+	return 12345
 }
 func (this *FakeHistogram) Max() int64 {
 	this.recordFirstInvocation("Max")
-	return 12
+	return 54321
 }
 func (this *FakeHistogram) Mean() float64 {
 	this.recordFirstInvocation("Mean")
-	return 12.3
+	return 123.45
 }
 func (this *FakeHistogram) StdDev() float64 {
 	this.recordFirstInvocation("StdDev")
-	return 12.34
+	return 54.321
 }
 func (this *FakeHistogram) TotalCount() int64 {
 	this.recordFirstInvocation("TotalCount")
-	return 12345
+	return 99999
 }
 func (this *FakeHistogram) ValueAtQuantile(q float64) int64 {
 	this.recordFirstInvocation("ValueAtQuantile")
