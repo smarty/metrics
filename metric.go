@@ -1,6 +1,9 @@
 package metrics
 
-import "time"
+import (
+	"sync/atomic"
+	"time"
+)
 
 type Metric interface {
 	MeasurementIsOverdue(now time.Time) bool
@@ -14,7 +17,7 @@ type MetricMeasurement struct {
 	Captured   time.Time
 	ID         int
 	Name       string
-	MetricType uint8
+	MetricType int
 	Value      int64
 }
 
@@ -34,14 +37,22 @@ func (this *ReportingFrequency) ScheduleNextMeasurement(now time.Time) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-type SimpleMetric struct {
+type AtomicMetric struct {
 	*ReportingFrequency
-	name  string
-	value int64
+	name       string
+	value      int64
+	metricType int
 }
 
-func (this *SimpleMetric) Measure() MetricMeasurement {
-	return MetricMeasurement{}
+func (this *AtomicMetric) Measure() MetricMeasurement {
+	return MetricMeasurement{
+		Name:       this.name,
+		Value:      atomic.LoadInt64(&this.value),
+		MetricType: this.metricType,
+	}
 }
+
+func (this *AtomicMetric) Add(delta int64) { atomic.AddInt64(&this.value, delta) }
+func (this *AtomicMetric) Set(value int64) { atomic.StoreInt64(&this.value, value) }
 
 ////////////////////////////////////////////////////////////////////////////
