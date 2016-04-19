@@ -7,8 +7,3 @@ type metricInfo struct {
 	MetricType         uint8
 	ReportingFrequency time.Duration
 }
-
-const (
-	counterMetricType = 1
-	gaugeMetricType   = 2
-)
