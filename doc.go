@@ -6,8 +6,11 @@ import (
 	"time"
 )
 
-type CounterMetric int
-type GaugeMetric int
+type (
+	CounterMetric   int
+	GaugeMetric     int
+	HistogramMetric int
+)
 
 const MetricConflict = -1
 

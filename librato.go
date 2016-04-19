@@ -67,7 +67,7 @@ func (this *Librato) publish() {
 		needed := int32(countBatches(len(this.buffer)))
 		if needed > available {
 			log.Printf("[INFO] (Metrics) Truncating publish. Not enough lanes to fully publish entire request. (Needed/Available: %d/%d)\n", needed, available)
-			needed = available // not enough open/available lanes to accomodate all the requests
+			needed = available // not enough open/available lanes to accommodate all the requests
 		}
 
 		for i := int32(0); i < needed; i++ {
@@ -132,6 +132,8 @@ func (this *Librato) buildRequest(body io.Reader) *http.Request {
 	return request
 }
 
-const maxMetricsPerBatch = 256
-const counterFormat = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
-const gaugeFormat = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
+const (
+	maxMetricsPerBatch = 256
+	counterFormat      = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
+	gaugeFormat        = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
+)
