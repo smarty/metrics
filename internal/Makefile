@@ -8,7 +8,7 @@ clean:
 	rm -rf hdrhistogram*
 
 clone:
-	git clone https://github.com/codahale/hdrhistogram.git && rm -rf hdrhistogram/.git
+	git clone https://github.com/codahale/hdrhistogram.git && rm -rf hdrhistogram/.git && rm hdrhistogram/.travis.yml
 
 rewrite:
 	grep -rl --exclude Makefile 'github.com/codahale' . | xargs sed -i '' 's#github.com/codahale#github.com/smartystreets/metrics/internal#g'
