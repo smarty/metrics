@@ -1,5 +1,6 @@
 package metrics
 
+/*
 import (
 	"bytes"
 	"log"
@@ -182,3 +183,4 @@ func (self tWriter) Write(value []byte) (int, error) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+*/
