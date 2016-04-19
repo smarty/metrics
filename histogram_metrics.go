@@ -34,37 +34,37 @@ type (
 	}
 )
 
-func (this *HistogramMinMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramMinMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: this.histogram.Min(),
 	}
 }
-func (this *HistogramMaxMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramMaxMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: this.histogram.Max(),
 	}
 }
-func (this *HistogramMeanMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramMeanMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: int64(this.histogram.Mean()),
 	}
 }
-func (this *HistogramStandardDeviationMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramStandardDeviationMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: int64(this.histogram.StdDev()),
 	}
 }
-func (this *HistogramQuantileMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramQuantileMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: this.histogram.ValueAtQuantile(this.quantile),
 	}
 }
-func (this *HistogramTotalCountMetric) CalculateMeasurement() MetricMeasurement {
+func (this *HistogramTotalCountMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name: this.name, MetricType: gaugeMetricType,
 		Value: this.histogram.TotalCount(),

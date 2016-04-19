@@ -17,7 +17,7 @@ func (this *HistogramMetricsFixture) Setup() {
 
 func (this *HistogramMetricsFixture) TestMinCalculation() {
 	metric := &HistogramMinMetric{histogram: this.histogram, name: "hello"}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      12345,
@@ -25,7 +25,7 @@ func (this *HistogramMetricsFixture) TestMinCalculation() {
 }
 func (this *HistogramMetricsFixture) TestMaxCalculation() {
 	metric := &HistogramMaxMetric{histogram: this.histogram, name: "hello"}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      54321,
@@ -33,7 +33,7 @@ func (this *HistogramMetricsFixture) TestMaxCalculation() {
 }
 func (this *HistogramMetricsFixture) TestMeanCalculation() {
 	metric := &HistogramMeanMetric{histogram: this.histogram, name: "hello"}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      123,
@@ -41,7 +41,7 @@ func (this *HistogramMetricsFixture) TestMeanCalculation() {
 }
 func (this *HistogramMetricsFixture) TestStandardDeviationCalculation() {
 	metric := &HistogramStandardDeviationMetric{histogram: this.histogram, name: "hello"}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      54,
@@ -49,7 +49,7 @@ func (this *HistogramMetricsFixture) TestStandardDeviationCalculation() {
 }
 func (this *HistogramMetricsFixture) TestQuantileCalculation() {
 	metric := &HistogramQuantileMetric{histogram: this.histogram, name: "hello", quantile: 99.9}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      99,
@@ -57,7 +57,7 @@ func (this *HistogramMetricsFixture) TestQuantileCalculation() {
 }
 func (this *HistogramMetricsFixture) TestTotalCountCalculation() {
 	metric := &HistogramTotalCountMetric{histogram: this.histogram, name: "hello"}
-	this.So(metric.CalculateMeasurement(), should.Resemble, MetricMeasurement{
+	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
 		MetricType: gaugeMetricType,
 		Name:       "hello",
 		Value:      99999,
