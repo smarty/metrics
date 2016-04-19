@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"testing"
+
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
 )
