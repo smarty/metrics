@@ -26,3 +26,4 @@ _testmain.go
 .DS_Store
 /.idea
 generated_by_gunit_test.go
+coverage.out
