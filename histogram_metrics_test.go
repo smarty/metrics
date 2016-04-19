@@ -15,6 +15,16 @@ func (this *HistogramMetricsFixture) Setup() {
 	this.histogram = &FakeHistogram{}
 }
 
+func (this *HistogramMetricsFixture) TestHistogramMetricsSatisfyMetricInterface() {
+	var metric *Metric
+	this.So(new(HistogramMinMetric), should.Implement, metric)
+	this.So(new(HistogramMaxMetric), should.Implement, metric)
+	this.So(new(HistogramMeanMetric), should.Implement, metric)
+	this.So(new(HistogramStandardDeviationMetric), should.Implement, metric)
+	this.So(new(HistogramQuantileMetric), should.Implement, metric)
+	this.So(new(HistogramTotalCountMetric), should.Implement, metric)
+}
+
 func (this *HistogramMetricsFixture) TestMinCalculation() {
 	metric := &HistogramMinMetric{histogram: this.histogram, name: "hello"}
 	this.So(metric.Measure(), should.Resemble, MetricMeasurement{
