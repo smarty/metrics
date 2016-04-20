@@ -14,6 +14,8 @@ type (
 
 const MetricConflict = -1
 
+var standard = New()
+
 // Add registers a named metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
@@ -28,14 +30,12 @@ func AddGauge(name string, reportingFrequency time.Duration) GaugeMetric {
 	return standard.AddGauge(name, reportingFrequency)
 }
 
+// TODO: AddHistogram(...)
+
 // StartMeasuring signals to this library that all
 // registrations have been performed.
 func StartMeasuring() {
 	standard.StartMeasuring()
-}
-
-func RegisterChannelDestination(queue chan []Measurement) {
-	standard.RegisterChannelDestination(queue)
 }
 
 // StopMeasuring turns measurement tracking off.
@@ -77,16 +77,17 @@ func StartLibrato(email, key string, queueCapacity, writers int) error {
 		return libratoConfigurationError
 	}
 
-	queue := make(chan []Measurement, queueCapacity)
-	RegisterChannelDestination(queue)
-
+	queue := make(chan []MetricMeasurement, queueCapacity)
 	hostname, _ := os.Hostname()
-	librato := newLibrato(email, key, hostname, int32(writers))
-	go librato.Listen(queue)
-
-	StartMeasuring()
-
+	go newLibrato(email, key, hostname, int32(writers)).Listen(queue)
+	go sendRegularMeasurements(queue)
 	return nil
+}
+
+func sendRegularMeasurements(queue chan []MetricMeasurement) {
+	for StartMeasuring(); ; time.Sleep(time.Second) {
+		queue <- standard.TakeMeasurements(time.Now())
+	}
 }
 
 var libratoConfigurationError = errors.New("You must supply non-empty email address, non-empty key, and positive queueCapacity and positive writers.")

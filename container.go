@@ -5,17 +5,11 @@ import (
 	"time"
 )
 
-var standard = New()
-
 type container struct {
 	metrics []int64
 	meta    []metricInfo
 	started int32
 	queue   chan []Measurement
-}
-
-func New() *container {
-	return &container{}
 }
 
 func (this *container) AddCounter(name string, reportingFrequency time.Duration) CounterMetric {

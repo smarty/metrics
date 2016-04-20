@@ -17,7 +17,7 @@ type Librato struct {
 	hostname       string
 	maxRequests    int32
 	activeRequests int32
-	buffer         map[int]Measurement
+	buffer         map[int]MetricMeasurement
 	client         *http.Client
 }
 
@@ -34,15 +34,15 @@ func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 		key:         key,
 		hostname:    hostname,
 		maxRequests: maxRequests,
-		buffer:      map[int]Measurement{},
-		client:      client, // client.go "Clients are safe for concurrent use by multiple goroutines."
+		buffer:      map[int]MetricMeasurement{},
+		client:      client,
 	}
 }
 
 func (this *Librato) Listen(queue chan []Measurement) {
 	for measurements := range queue {
 		for _, measurement := range measurements {
-			this.buffer[measurement.ID] = measurement // overwrite the oldest with the newest
+			this.buffer[measurement.ID] = measurement // last one wins
 		}
 		if len(queue) == 0 {
 			this.publish()
@@ -59,14 +59,14 @@ func (this *Librato) publish() {
 		active := atomic.LoadInt32(&this.activeRequests)
 		available := this.maxRequests - active
 		if available == 0 {
-			log.Printf("[INFO] (Metrics) Skipping publish. No open lanes. (Active/Max: %d/%d)\n", active, this.maxRequests)
+			log.Printf(logSkippingPublish, active, this.maxRequests)
 			break // all lanes are busy
 		}
 
 		// how many requests would we need to take care of all of the items
 		needed := int32(countBatches(len(this.buffer)))
 		if needed > available {
-			log.Printf("[INFO] (Metrics) Truncating publish. Not enough lanes to fully publish entire request. (Needed/Available: %d/%d)\n", needed, available)
+			log.Printf(logTruncatingPublish, needed, available)
 			needed = available // not enough open/available lanes to accommodate all the requests
 		}
 
@@ -81,7 +81,7 @@ func (this *Librato) publish() {
 					io.Copy(ioutil.Discard, response.Body)
 					response.Body.Close()
 				} else if err != nil {
-					log.Println("[WARN] (Metrics) Unable to complete HTTP request:", err)
+					log.Println(logRequestInterrupted, err)
 				}
 				atomic.AddInt32(&this.activeRequests, -1)
 			}()
@@ -105,13 +105,14 @@ func (this *Librato) serializeNext() io.Reader {
 	}
 
 	for index, metric := range this.buffer {
-		meta := standard.meta[index]
 		unixTime := metric.Captured.Unix()
-		if meta.MetricType == counterMetricType {
-			fmt.Fprintf(body, counterFormat, counterIndex, meta.Name, counterIndex, metric.Value, counterIndex, unixTime)
+		if metric.MetricType == counterMetricType {
+			fmt.Fprintf(body, counterFormat,
+				counterIndex, metric.Name, counterIndex, metric.Value, counterIndex, unixTime)
 			counterIndex++
 		} else {
-			fmt.Fprintf(body, gaugeFormat, gaugeIndex, meta.Name, gaugeIndex, metric.Value, gaugeIndex, unixTime)
+			fmt.Fprintf(body, gaugeFormat,
+				gaugeIndex, metric.Name, gaugeIndex, metric.Value, gaugeIndex, unixTime)
 			gaugeIndex++
 		}
 
@@ -128,12 +129,16 @@ func (this *Librato) buildRequest(body io.Reader) *http.Request {
 	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
 	request.SetBasicAuth(this.email, this.key)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Set("User-Agent", "") // don't send a user agent (empty = remove it completely from the request)
+	sendBlankUserAgent(request)
 	return request
 }
+func sendBlankUserAgent(request *http.Request) { request.Header.Set("User-Agent", "") }
 
 const (
-	maxMetricsPerBatch = 256
-	counterFormat      = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
-	gaugeFormat        = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
+	maxMetricsPerBatch    = 256
+	counterFormat         = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
+	gaugeFormat           = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
+	logRequestInterrupted = "[WARN] (Metrics) Unable to complete HTTP request:"
+	logSkippingPublish    = "[INFO] (Metrics) Skipping publish. No open lanes. (Active/Max: %d/%d)\n"
+	logTruncatingPublish  = "[INFO] (Metrics) Truncating publish. Not enough lanes to fully publish entire request. (Needed/Available: %d/%d)\n"
 )

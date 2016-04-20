@@ -17,7 +17,7 @@ type MetricsTracker struct {
 	started    int32
 }
 
-func New2() *MetricsTracker { // TODO: rename to New() when we finish (get rid of *container)
+func New() *MetricsTracker { // TODO: rename to New() when we finish (get rid of *container)
 	return &MetricsTracker{
 		counters:   make(map[CounterMetric]*AtomicMetric),
 		gauges:     make(map[GaugeMetric]*AtomicMetric),
@@ -131,7 +131,7 @@ func (this *MetricsTracker) CountN(id CounterMetric, n int64) bool {
 	}
 	return found
 }
-func (this *MetricsTracker) CountRaw(id CounterMetric, value int64) bool {
+func (this *MetricsTracker) RawCount(id CounterMetric, value int64) bool {
 	counter, found := this.counters[id]
 	if found {
 		counter.Set(value)

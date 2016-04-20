@@ -1,5 +1,7 @@
 package metrics
 
+// TODO: add histogram support
+
 // Metrics can be used as a struct field and overridden with the Capture
 // function in unit test setups to allow assertions on counted and measured
 // values. This approach is similar to the one employed by the clock package

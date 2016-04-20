@@ -15,7 +15,7 @@ type MetricsTrackerFixture struct {
 }
 
 func (this *MetricsTrackerFixture) Setup() {
-	this.tracker = New2()
+	this.tracker = New()
 	this.now = time.Now()
 }
 
@@ -73,7 +73,7 @@ func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 
 	this.So(this.tracker.Count(counter1), should.BeTrue)
 	this.So(this.tracker.CountN(counter1, 9), should.BeTrue)
-	this.So(this.tracker.CountRaw(counter2, 42), should.BeTrue)
+	this.So(this.tracker.RawCount(counter2, 42), should.BeTrue)
 	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
 		{
 			Captured:   this.now,
