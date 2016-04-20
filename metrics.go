@@ -148,7 +148,7 @@ func (this *MetricsTracker) Measure(id GaugeMetric, value int64) bool {
 func (this *MetricsTracker) Record(id HistogramMetric, value int64) bool {
 	histogram, found := this.histograms[id]
 	if found {
-		histogram.RecordValue(value)
+		found = histogram.RecordValue(value) == nil
 	}
 	return found
 }

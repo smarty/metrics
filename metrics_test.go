@@ -169,6 +169,8 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 		this.So(this.tracker.Record(histogram1, int64(x)), should.BeTrue)
 	}
 
+	this.So(this.tracker.Record(histogram1, 1000000), should.BeFalse) // out of range (value too large)
+
 	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
 		{
 			Captured:   this.now,
