@@ -1,6 +1,11 @@
 package metrics
 
-import "time"
+import (
+	"sync"
+	"time"
+
+	"github.com/smartystreets/metrics/internal/hdrhistogram"
+)
 
 type MetricsTracker struct {
 	metrics    []Metric
@@ -16,6 +21,11 @@ func New2() *MetricsTracker { // TODO: rename to New() when we finish (get rid o
 		histograms: make(map[HistogramMetric]Histogram),
 	}
 }
+
+// TODO: guard against negative durations?
+// TODO: guard against blank names?
+// TODO: guard against min > max (histogram)?
+// TODO: guard against resolution being below 1 or above 5 (histogram)? (to prevent a panic)
 
 func (this *MetricsTracker) AddCounter(name string, update time.Duration) CounterMetric {
 	metric := NewCounter(name, update)
@@ -34,20 +44,44 @@ func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMet
 func (this *MetricsTracker) AddHistogram(name string, update time.Duration,
 	min, max int64, resolution int, quantiles ...float64) HistogramMetric {
 
-	panic("TODO")
+	id, histogram := this.addHistogram(min, max, resolution)
+	this.addHistogramMetrics(name, update, histogram, quantiles)
+	return id
+}
+
+func (this *MetricsTracker) addHistogram(min, max int64, resolution int) (HistogramMetric, Histogram) {
+	mutex := new(sync.RWMutex)
+	id := HistogramMetric(len(this.histograms))
+	hdr := hdrhistogram.New(min, max, resolution)
+	histogram := NewSynchronizedHistogram(hdr, mutex.RLocker(), mutex)
+	this.histograms[id] = histogram
+	return id, histogram
+}
+func (this *MetricsTracker) addHistogramMetrics(
+	name string, update time.Duration, histogram Histogram, quantiles []float64) {
+
+	this.metrics = append(this.metrics, NewHistogramMinMetric(name, histogram, update))
+	this.metrics = append(this.metrics, NewHistogramMaxMetric(name, histogram, update))
+	this.metrics = append(this.metrics, NewHistogramMeanMetric(name, histogram, update))
+	this.metrics = append(this.metrics, NewHistogramStandardDeviationMetric(name, histogram, update))
+	this.metrics = append(this.metrics, NewHistogramTotalCountMetric(name, histogram, update))
+
+	for _, quantile := range quantiles {
+		this.metrics = append(this.metrics, NewHistogramQuantileMetric(name, quantile, histogram, update))
+	}
 }
 
 func (this *MetricsTracker) StartMeasuring() {
 
 }
-func (this *MetricsTracker) StopMeasuring()  {
+func (this *MetricsTracker) StopMeasuring() {
 	panic("TODO")
 }
 
 func (this *MetricsTracker) Count(id CounterMetric) bool {
 	return this.CountN(id, 1)
 }
-func (this *MetricsTracker) CountN(id CounterMetric, n int64) bool     {
+func (this *MetricsTracker) CountN(id CounterMetric, n int64) bool {
 	counter, found := this.counters[id]
 	if found {
 		counter.Add(n)
@@ -69,7 +103,8 @@ func (this *MetricsTracker) Measure(id GaugeMetric, value int64) bool {
 	return found
 }
 func (this *MetricsTracker) Record(id HistogramMetric, value int64) bool {
-	panic("TODO")
+	// TODO: check id for membership in this.histograms
+	return this.histograms[id].RecordValue(value) == nil
 }
 
 func (this *MetricsTracker) TakeMeasurements(now time.Time) (measurements []MetricMeasurement) {

@@ -51,7 +51,7 @@ func (this *MetricsTrackerFixture) TestCounterIDMustBeWithinRange() {
 
 	this.tracker.StartMeasuring()
 
-	this.So(this.tracker.Count(counter1 + 1), should.BeFalse)
+	this.So(this.tracker.Count(counter1+1), should.BeFalse)
 	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
 		{
 			Captured:   this.now,
@@ -95,7 +95,7 @@ func (this *MetricsTrackerFixture) TestGaugeIDMustBeWithinRange() {
 
 	this.tracker.StartMeasuring()
 
-	this.So(this.tracker.Measure(gauge1 + 1, 42), should.BeFalse)
+	this.So(this.tracker.Measure(gauge1+1, 42), should.BeFalse)
 	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
 		{
 			Captured:   this.now,
@@ -103,6 +103,67 @@ func (this *MetricsTrackerFixture) TestGaugeIDMustBeWithinRange() {
 			Name:       "gauge1",
 			MetricType: gaugeMetricType,
 			Value:      0,
+		},
+	})
+}
+
+func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
+	histogram1 := this.tracker.AddHistogram("histogram1", time.Nanosecond, 0, 100, 5, 50, 99)
+	this.tracker.StartMeasuring()
+
+	for x := 1; x <= 100; x++ {
+		this.So(this.tracker.Record(histogram1, int64(x)), should.BeTrue)
+	}
+
+	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
+		{
+			Captured:   this.now,
+			ID:         0,
+			Value:      1,
+			Name:       "histogram1_min",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         1,
+			Value:      100,
+			Name:       "histogram1_max",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         2,
+			Value:      50,
+			Name:       "histogram1_mean",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         3,
+			Value:      28,
+			Name:       "histogram1_stddev",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         4,
+			Value:      100,
+			Name:       "histogram1_total",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         5,
+			Value:      50,
+			Name:       "histogram1_50.000",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         6,
+			Value:      99,
+			Name:       "histogram1_99.000",
+			MetricType: gaugeMetricType,
 		},
 	})
 }
