@@ -39,7 +39,7 @@ func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	}
 }
 
-func (this *Librato) Listen(queue chan []Measurement) {
+func (this *Librato) Listen(queue chan []MetricMeasurement) {
 	for measurements := range queue {
 		for _, measurement := range measurements {
 			this.buffer[measurement.ID] = measurement // last one wins
