@@ -53,6 +53,20 @@ type AtomicMetric struct {
 	metricType int
 }
 
+func NewCounter(name string, update time.Duration) *AtomicMetric {
+	return NewAtomicMetric(name, update, counterMetricType)
+}
+func NewGauge(name string, update time.Duration) *AtomicMetric {
+	return NewAtomicMetric(name, update, gaugeMetricType)
+}
+func NewAtomicMetric(name string, update time.Duration, metricType int) *AtomicMetric {
+	return &AtomicMetric{
+		ReportingFrequency: &ReportingFrequency{interval: update},
+		metricType:         metricType,
+		name:               name,
+	}
+}
+
 func (this *AtomicMetric) Measure() MetricMeasurement {
 	return MetricMeasurement{
 		Name:       this.name,
