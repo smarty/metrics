@@ -16,21 +16,29 @@ const MetricConflict = -1
 
 var standard = New()
 
-// Add registers a named metric along with the desired reporting frequency.
+// AddCounter registers a named counter metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
 func AddCounter(name string, reportingFrequency time.Duration) CounterMetric {
 	return standard.AddCounter(name, reportingFrequency)
 }
 
-// Add registers a named metric along with the desired reporting frequency.
+// AddGauge registers a named gauge metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
 func AddGauge(name string, reportingFrequency time.Duration) GaugeMetric {
 	return standard.AddGauge(name, reportingFrequency)
 }
 
-// TODO: AddHistogram(...)
+// AddHistogram registers a named histogram metric along with the desired reporting frequency.
+// The function is meant to be called *only* at application startup and is not thread safe.
+// A negative return value indicates that the registration was unsuccessful.
+func AddHistogram(
+	name string, reportingFrequency time.Duration,
+	min, max int64, resolution int, quantiles ...float64) HistogramMetric {
+
+	return standard.AddHistogram(name, reportingFrequency, min, max, resolution, quantiles...)
+}
 
 // StartMeasuring signals to this library that all
 // registrations have been performed.
