@@ -103,8 +103,11 @@ func (this *MetricsTracker) Measure(id GaugeMetric, value int64) bool {
 	return found
 }
 func (this *MetricsTracker) Record(id HistogramMetric, value int64) bool {
-	// TODO: check id for membership in this.histograms
-	return this.histograms[id].RecordValue(value) == nil
+	histogram, found := this.histograms[id]
+	if found {
+		histogram.RecordValue(value)
+	}
+	return found
 }
 
 func (this *MetricsTracker) TakeMeasurements(now time.Time) (measurements []MetricMeasurement) {

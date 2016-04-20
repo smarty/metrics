@@ -46,7 +46,7 @@ func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 	})
 }
 
-func (this *MetricsTrackerFixture) TestCounterIDMustBeWithinRange() {
+func (this *MetricsTrackerFixture) TestCounterIDMustBeValid() {
 	counter1 := this.tracker.AddCounter("counter1", time.Nanosecond)
 
 	this.tracker.StartMeasuring()
@@ -90,7 +90,7 @@ func (this *MetricsTrackerFixture) TestMeasuringGauges() {
 	})
 }
 
-func (this *MetricsTrackerFixture) TestGaugeIDMustBeWithinRange() {
+func (this *MetricsTrackerFixture) TestGaugeIDMustBeValid() {
 	gauge1 := this.tracker.AddGauge("gauge1", time.Nanosecond)
 
 	this.tracker.StartMeasuring()
@@ -163,6 +163,58 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			ID:         6,
 			Value:      99,
 			Name:       "histogram1_99.000",
+			MetricType: gaugeMetricType,
+		},
+	})
+}
+
+func (this *MetricsTrackerFixture) TestHistogramIDMustBeValid() {
+	histogram := this.tracker.AddHistogram("histogram1", time.Nanosecond, 0, 10, 3, 90)
+
+	this.tracker.StartMeasuring()
+
+	this.So(this.tracker.Record(histogram + 1, 42), should.BeFalse)
+	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
+		{
+			Captured:   this.now,
+			ID:         0,
+			Value:      0,
+			Name:       "histogram1_min",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         1,
+			Value:      0,
+			Name:       "histogram1_max",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         2,
+			Value:      0,
+			Name:       "histogram1_mean",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         3,
+			Value:      0,
+			Name:       "histogram1_stddev",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         4,
+			Value:      0,
+			Name:       "histogram1_total",
+			MetricType: gaugeMetricType,
+		},
+		{
+			Captured:   this.now,
+			ID:         5,
+			Value:      0,
+			Name:       "histogram1_90.000",
 			MetricType: gaugeMetricType,
 		},
 	})
