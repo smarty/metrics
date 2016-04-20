@@ -1,7 +1,9 @@
 package metrics
 
 import (
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/smartystreets/metrics/internal/hdrhistogram"
@@ -12,6 +14,7 @@ type MetricsTracker struct {
 	counters   map[CounterMetric]*AtomicMetric
 	gauges     map[GaugeMetric]*AtomicMetric
 	histograms map[HistogramMetric]Histogram
+	started    int32
 }
 
 func New2() *MetricsTracker { // TODO: rename to New() when we finish (get rid of *container)
@@ -22,12 +25,10 @@ func New2() *MetricsTracker { // TODO: rename to New() when we finish (get rid o
 	}
 }
 
-// TODO: guard against negative durations?
-// TODO: guard against blank names?
-// TODO: guard against min > max (histogram)?
-// TODO: guard against resolution being below 1 or above 5 (histogram)? (to prevent a panic)
-
 func (this *MetricsTracker) AddCounter(name string, update time.Duration) CounterMetric {
+	if name = cleanName(name); !this.canAddMetric(name, update) {
+		return MetricConflict
+	}
 	metric := NewCounter(name, update)
 	id := CounterMetric(len(this.metrics))
 	this.metrics = append(this.metrics, metric)
@@ -35,6 +36,9 @@ func (this *MetricsTracker) AddCounter(name string, update time.Duration) Counte
 	return id
 }
 func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMetric {
+	if name = cleanName(name); !this.canAddMetric(name, update) {
+		return MetricConflict
+	}
 	metric := NewGauge(name, update)
 	id := GaugeMetric(len(this.metrics))
 	this.metrics = append(this.metrics, metric)
@@ -44,11 +48,19 @@ func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMet
 func (this *MetricsTracker) AddHistogram(name string, update time.Duration,
 	min, max int64, resolution int, quantiles ...float64) HistogramMetric {
 
+	if name = cleanName(name); !this.canAddMetric(name, update) {
+		return MetricConflict
+	}
+	if !histogramOptionsAreValid(min, max, resolution) {
+		return MetricConflict
+	}
 	id, histogram := this.addHistogram(min, max, resolution)
 	this.addHistogramMetrics(name, update, histogram, quantiles)
 	return id
 }
-
+func histogramOptionsAreValid(min, max int64, resolution int) bool {
+	return min < max && (resolution >= 1 && resolution <= 5)
+}
 func (this *MetricsTracker) addHistogram(min, max int64, resolution int) (HistogramMetric, Histogram) {
 	mutex := new(sync.RWMutex)
 	id := HistogramMetric(len(this.histograms))
@@ -71,11 +83,42 @@ func (this *MetricsTracker) addHistogramMetrics(
 	}
 }
 
-func (this *MetricsTracker) StartMeasuring() {
+func cleanName(name string) string {
+	return strings.TrimSpace(name)
+}
 
+func (this *MetricsTracker) canAddMetric(name string, duration time.Duration) bool {
+	if atomic.LoadInt32(&this.started) > 0 {
+		return false
+	}
+	if len(name) == 0 {
+		return false
+	}
+	if this.nameIsTaken(name) {
+		return false
+	}
+	if duration < time.Nanosecond {
+		return false
+	}
+	return true
+}
+
+func (this *MetricsTracker) nameIsTaken(name string) bool {
+	for _, metric := range this.metrics {
+		if metric.Measure().Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *MetricsTracker) StartMeasuring() {
+	if !this.isRunning() {
+		atomic.AddInt32(&this.started, 1)
+	}
 }
 func (this *MetricsTracker) StopMeasuring() {
-	panic("TODO")
+	atomic.StoreInt32(&this.started, 0)
 }
 
 func (this *MetricsTracker) Count(id CounterMetric) bool {
@@ -110,7 +153,11 @@ func (this *MetricsTracker) Record(id HistogramMetric, value int64) bool {
 	return found
 }
 
-func (this *MetricsTracker) TakeMeasurements(now time.Time) (measurements []MetricMeasurement) {
+func (this *MetricsTracker) TakeMeasurements(now time.Time) []MetricMeasurement {
+	if !this.isRunning() {
+		return nil
+	}
+	measurements := []MetricMeasurement{}
 	for id, metric := range this.metrics {
 		if metric.MeasurementIsOverdue(now) {
 			metric.ScheduleNextMeasurement(now)
@@ -121,4 +168,8 @@ func (this *MetricsTracker) TakeMeasurements(now time.Time) (measurements []Metr
 		}
 	}
 	return measurements
+}
+
+func (this *MetricsTracker) isRunning() bool {
+	return atomic.LoadInt32(&this.started) > 0
 }

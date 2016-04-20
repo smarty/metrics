@@ -19,6 +19,52 @@ func (this *MetricsTrackerFixture) Setup() {
 	this.now = time.Now()
 }
 
+func (this *MetricsTrackerFixture) TestMetricNamesMustBeUnique() {
+	counter1 := this.tracker.AddCounter("1", time.Nanosecond)
+	counter1a := this.tracker.AddCounter("1", time.Nanosecond)
+	gauge1 := this.tracker.AddGauge("1", time.Nanosecond)
+	histogram1 := this.tracker.AddHistogram("1", time.Nanosecond, 0, 10, 5, 50)
+	this.So(counter1, should.Equal, 0)
+	this.So(counter1a, should.Equal, MetricConflict)
+	this.So(gauge1, should.Equal, MetricConflict)
+	this.So(histogram1, should.Equal, MetricConflict)
+
+	this.tracker.StartMeasuring()
+	this.So(this.tracker.TakeMeasurements(this.now), should.HaveLength, 1)
+}
+func (this *MetricsTrackerFixture) TestMetricsCannotBeAddedWhenTheTrackerHasBeenStarted() {
+	this.tracker.StartMeasuring()
+	this.So(this.tracker.AddCounter("1", time.Nanosecond), should.Equal, MetricConflict)
+	this.So(this.tracker.AddGauge("2", time.Nanosecond), should.Equal, MetricConflict)
+	this.So(this.tracker.AddHistogram("3", time.Nanosecond, 0, 10, 5, 50), should.Equal, MetricConflict)
+}
+func (this *MetricsTrackerFixture) TestMetricsCanBeAddedAfterStoppingTheTracker() {
+	this.tracker.StartMeasuring()
+	this.tracker.StopMeasuring()
+	this.So(this.tracker.AddCounter("1", time.Nanosecond), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddGauge("2", time.Nanosecond), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddHistogram("3", time.Nanosecond, 0, 10, 5, 50), should.NotEqual, MetricConflict)
+}
+func (this *MetricsTrackerFixture) TestReportingFrequencyMustBePositive() {
+	var duration time.Duration
+	this.So(this.tracker.AddCounter("1", duration), should.Equal, MetricConflict)
+	this.So(this.tracker.AddGauge("2", duration), should.Equal, MetricConflict)
+	this.So(this.tracker.AddHistogram("3", duration, 0, 10, 5, 50), should.Equal, MetricConflict)
+}
+func (this *MetricsTrackerFixture) TestMeasurementsOnlyAvailableWhenTrackerIsStarted() {
+	this.tracker.AddCounter("counter1", time.Nanosecond)
+	this.So(this.tracker.TakeMeasurements(this.now), should.BeEmpty)
+
+	this.tracker.StartMeasuring()
+	this.So(this.tracker.TakeMeasurements(this.now), should.NotBeEmpty)
+
+	this.tracker.StopMeasuring()
+	this.So(this.tracker.TakeMeasurements(this.now.Add(time.Second)), should.BeEmpty)
+
+	this.tracker.StartMeasuring()
+	this.So(this.tracker.TakeMeasurements(this.now.Add(time.Second)), should.NotBeEmpty)
+}
+
 func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 	counter1 := this.tracker.AddCounter("counter1", time.Nanosecond)
 	counter2 := this.tracker.AddCounter("counter2", time.Nanosecond)
@@ -45,7 +91,6 @@ func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 		},
 	})
 }
-
 func (this *MetricsTrackerFixture) TestCounterIDMustBeValid() {
 	counter1 := this.tracker.AddCounter("counter1", time.Nanosecond)
 
@@ -61,6 +106,11 @@ func (this *MetricsTrackerFixture) TestCounterIDMustBeValid() {
 			Value:      0,
 		},
 	})
+}
+func (this *MetricsTrackerFixture) TestCounterNameMustHaveSubstance() {
+	counter1 := this.tracker.AddCounter("\t\t\n\n     \t", time.Nanosecond)
+	this.So(counter1, should.Equal, MetricConflict)
+	this.So(this.tracker.TakeMeasurements(this.now), should.BeEmpty)
 }
 
 func (this *MetricsTrackerFixture) TestMeasuringGauges() {
@@ -89,7 +139,6 @@ func (this *MetricsTrackerFixture) TestMeasuringGauges() {
 		},
 	})
 }
-
 func (this *MetricsTrackerFixture) TestGaugeIDMustBeValid() {
 	gauge1 := this.tracker.AddGauge("gauge1", time.Nanosecond)
 
@@ -105,6 +154,11 @@ func (this *MetricsTrackerFixture) TestGaugeIDMustBeValid() {
 			Value:      0,
 		},
 	})
+}
+func (this *MetricsTrackerFixture) TestGaugeNameMustHaveSubstance() {
+	gauge1 := this.tracker.AddGauge("\t\t\n\n     \t", time.Nanosecond)
+	this.So(gauge1, should.Equal, MetricConflict)
+	this.So(this.tracker.TakeMeasurements(this.now), should.BeEmpty)
 }
 
 func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
@@ -167,13 +221,12 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 		},
 	})
 }
-
 func (this *MetricsTrackerFixture) TestHistogramIDMustBeValid() {
 	histogram := this.tracker.AddHistogram("histogram1", time.Nanosecond, 0, 10, 3, 90)
 
 	this.tracker.StartMeasuring()
 
-	this.So(this.tracker.Record(histogram + 1, 42), should.BeFalse)
+	this.So(this.tracker.Record(histogram+1, 42), should.BeFalse)
 	this.So(this.tracker.TakeMeasurements(this.now), should.Resemble, []MetricMeasurement{
 		{
 			Captured:   this.now,
@@ -218,4 +271,26 @@ func (this *MetricsTrackerFixture) TestHistogramIDMustBeValid() {
 			MetricType: gaugeMetricType,
 		},
 	})
+}
+func (this *MetricsTrackerFixture) TestHistogramNameMustHaveSubstance() {
+	histogram1 := this.tracker.AddHistogram("\t\t\n\n     \t", time.Nanosecond, 0, 10, 5, 50)
+	this.So(histogram1, should.Equal, MetricConflict)
+	this.So(this.tracker.TakeMeasurements(this.now), should.BeEmpty)
+}
+func (this *MetricsTrackerFixture) TestHistogramMinAndMaxMustBeAscending() {
+	this.So(this.tracker.AddHistogram("h", time.Nanosecond, 10, 9, 3, 50), should.Equal, MetricConflict)
+}
+func (this *MetricsTrackerFixture) TestHistogramResolutionMustBeWithinTolerance() {
+	// invalid range:                   resolution column: | ----->##<-----|
+	this.So(this.tracker.AddHistogram("h", time.Nanosecond, 1, 10, -1, 50), should.Equal, MetricConflict)
+	this.So(this.tracker.AddHistogram("h0", time.Nanosecond, 1, 10, 0, 50), should.Equal, MetricConflict)
+	// valid range:
+	this.So(this.tracker.AddHistogram("h1", time.Nanosecond, 1, 10, 1, 50), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddHistogram("h2", time.Nanosecond, 1, 10, 2, 50), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddHistogram("h3", time.Nanosecond, 1, 10, 3, 50), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddHistogram("h4", time.Nanosecond, 1, 10, 4, 50), should.NotEqual, MetricConflict)
+	this.So(this.tracker.AddHistogram("h5", time.Nanosecond, 1, 10, 5, 50), should.NotEqual, MetricConflict)
+	// invalid range:
+	this.So(this.tracker.AddHistogram("h6", time.Nanosecond, 1, 10, 6, 50), should.Equal, MetricConflict)
+	this.So(this.tracker.AddHistogram("h7", time.Nanosecond, 1, 10, 7, 50), should.Equal, MetricConflict)
 }
