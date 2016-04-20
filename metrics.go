@@ -52,10 +52,10 @@ func (this *MetricsTracker) AddHistogram(name string, update time.Duration,
 func (this *MetricsTracker) addHistogram(min, max int64, resolution int) (HistogramMetric, Histogram) {
 	mutex := new(sync.RWMutex)
 	id := HistogramMetric(len(this.histograms))
-	hdr := hdrhistogram.New(min, max, resolution)
-	histogram := NewSynchronizedHistogram(hdr, mutex.RLocker(), mutex)
-	this.histograms[id] = histogram
-	return id, histogram
+	histogram := hdrhistogram.New(min, max, resolution)
+	synchronized := NewSynchronizedHistogram(histogram, mutex.RLocker(), mutex)
+	this.histograms[id] = synchronized
+	return id, synchronized
 }
 func (this *MetricsTracker) addHistogramMetrics(
 	name string, update time.Duration, histogram Histogram, quantiles []float64) {
