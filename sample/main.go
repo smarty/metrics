@@ -11,12 +11,28 @@ import (
 func main() {
 	metrics.StartLibrato(email, key, 1024, 4)
 
-	// TODO: build struct and invoke method that measures stuff
+	app := new(Application)
 
-	fmt.Println("Hello, World!")
+	for x := int64(0); ; x++ {
+		fmt.Println(x)
+		app.DoStuff(x)
+		time.Sleep(time.Millisecond * 100)
+	}
 }
 
-// TODO: define struct that counts metrics
+////////////////////////////////////////////////////////////////////////////
+
+type Application struct {
+	metrics *metrics.Metrics
+}
+
+func (this *Application) DoStuff(x int64) {
+	this.metrics.CountN(Counter, x)
+	this.metrics.Measure(Gauge, x)
+	this.metrics.Record(Histogram, x%1000)
+}
+
+////////////////////////////////////////////////////////////////////////////
 
 var (
 	email = os.Getenv("LIBRATO_EMAIL")
