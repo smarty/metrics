@@ -17,7 +17,7 @@ type MetricsTracker struct {
 	started    int32
 }
 
-func New() *MetricsTracker { // TODO: rename to New() when we finish (get rid of *container)
+func New() *MetricsTracker {
 	return &MetricsTracker{
 		counters:   make(map[CounterMetric]*AtomicMetric),
 		gauges:     make(map[GaugeMetric]*AtomicMetric),
