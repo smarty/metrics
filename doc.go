@@ -52,13 +52,13 @@ func StopMeasuring() {
 	standard.StopMeasuring()
 }
 
-// Count (automically) increments the metric indicated by one.
+// Count increments the metric indicated by one.
 // A return value of false indicates the count could not occur.
 func Count(id CounterMetric) bool {
 	return standard.Count(id)
 }
 
-// Count (automically) increments the metric indicated by the number provided.
+// Count increments the metric indicated by the number provided.
 // A return value of false indicates the count could not occur.
 func CountN(id CounterMetric, increment int64) bool {
 	return standard.CountN(id, increment)
@@ -71,10 +71,16 @@ func RawCount(id CounterMetric, value int64) bool {
 	return standard.RawCount(id, value)
 }
 
-// Measure (automically) sets the metric of the metric indicated to the value specified
+// Measure sets the metric indicated to the value specified.
 // A return value of false indicates the count could not occur.
 func Measure(id GaugeMetric, value int64) bool {
 	return standard.Measure(id, value)
+}
+
+// Record records the value with the histogram indicated.
+// A return value of false indicates the count could not occur.
+func Record(id HistogramMetric, value int64) bool {
+	return standard.Record(id, value)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
