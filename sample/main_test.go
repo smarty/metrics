@@ -1,10 +1,16 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/smartystreets/gunit"
 	"github.com/smartystreets/metrics"
 	"github.com/smartystreets/assertions/should"
 )
+
+func TestApplicationFixture(t *testing.T) {
+	gunit.Run(new(ApplicationFixture), t)
+}
 
 type ApplicationFixture struct {
 	*gunit.Fixture
@@ -25,5 +31,3 @@ func (this *ApplicationFixture) TestMetricsAreMeasured() {
 	this.So(this.app.metrics.HistogramValue(Histogram).Max(), should.Equal, 42)
 }
 
-//go:generate go install github.com/smartystreets/gunit/gunit
-//go:generate gunit

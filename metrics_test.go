@@ -1,11 +1,16 @@
 package metrics
 
 import (
+	"testing"
 	"time"
 
 	"github.com/smartystreets/assertions/should"
 	"github.com/smartystreets/gunit"
 )
+
+func TestMetricsTrackerFixture(t *testing.T) {
+	gunit.Run(new(MetricsTrackerFixture), t)
+}
 
 type MetricsTrackerFixture struct {
 	*gunit.Fixture

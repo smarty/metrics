@@ -1,9 +1,15 @@
 package metrics
 
 import (
+	"testing"
+
 	"github.com/smartystreets/assertions/should"
 	"github.com/smartystreets/gunit"
 )
+
+func TestHistogramMetricsFixture(t *testing.T) {
+	gunit.Run(new(HistogramMetricsFixture), t)
+}
 
 type HistogramMetricsFixture struct {
 	*gunit.Fixture

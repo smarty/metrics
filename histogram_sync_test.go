@@ -3,11 +3,16 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/smartystreets/assertions/should"
 	"github.com/smartystreets/gunit"
 )
+
+func TestSynchronizedHistogramFixture(t *testing.T) {
+	gunit.Run(new(SynchronizedHistogramFixture), t)
+}
 
 type SynchronizedHistogramFixture struct {
 	*gunit.Fixture
