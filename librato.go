@@ -12,8 +12,7 @@ import (
 )
 
 type Librato struct {
-	email          string
-	key            string
+	config         LibratoConfigLoader
 	hostname       string
 	maxRequests    int32
 	activeRequests int32
@@ -21,7 +20,7 @@ type Librato struct {
 	client         *http.Client
 }
 
-func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
+func newLibrato(config LibratoConfigLoader, hostname string, maxRequests int32) *Librato {
 	// TODO: validate inputs
 
 	client := &http.Client{
@@ -30,8 +29,7 @@ func newLibrato(email, key, hostname string, maxRequests int32) *Librato {
 	}
 
 	return &Librato{
-		email:       email,
-		key:         key,
+		config:      config,
 		hostname:    hostname,
 		maxRequests: maxRequests,
 		buffer:      map[int]MetricMeasurement{},
@@ -127,7 +125,8 @@ func (this *Librato) serializeNext() io.Reader {
 }
 func (this *Librato) buildRequest(body io.Reader) *http.Request {
 	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
-	request.SetBasicAuth(this.email, this.key)
+	config := this.config()
+	request.SetBasicAuth(config.Email, config.Key)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	sendBlankUserAgent(request)
 	return request

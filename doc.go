@@ -86,16 +86,25 @@ func Record(id HistogramMetric, value int64) bool {
 ///////////////////////////////////////////////////////////////////////////////
 
 // StartLibrato configures a new metrics instance, specifies a number of Librato writers, and starts measuring.
-func StartLibrato(email, key string, queueCapacity, writers int) error {
-	if len(email) == 0 || len(key) == 0 || queueCapacity <= 0 || writers <= 0 {
+func StartLibratoConfig(configLoader LibratoConfigLoader, queueCapacity, writers int) error {
+	config := configLoader()
+	if len(config.Email) == 0 || len(config.Key) == 0 || queueCapacity <= 0 || writers <= 0 {
 		return libratoConfigurationError
 	}
 
 	queue := make(chan []MetricMeasurement, queueCapacity)
 	hostname, _ := os.Hostname()
-	go newLibrato(email, key, hostname, int32(writers)).Listen(queue)
+	go newLibrato(configLoader, hostname, int32(writers)).Listen(queue)
 	go sendRegularMeasurements(queue)
 	return nil
+}
+
+func StartLibrato(email, key string, queueCapacity, writers int) error {
+	configLoader := func() LibratoConfig {
+		return LibratoConfig{Email: email, Key: key}
+	}
+
+	return StartLibratoConfig(configLoader, queueCapacity, writers)
 }
 
 func sendRegularMeasurements(queue chan []MetricMeasurement) {
