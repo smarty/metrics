@@ -85,7 +85,8 @@ func Record(id HistogramMetric, value int64) bool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// StartLibrato configures a new metrics instance, specifies a number of Librato writers, and starts measuring.
+// StartLibratoConfig uses the provided configLoader to configure a new metrics instance,
+// specify a number of Librato writers, and start measuring.
 func StartLibratoConfig(configLoader LibratoConfigLoader, queueCapacity, writers int) error {
 	config := configLoader()
 	if len(config.Email) == 0 || len(config.Key) == 0 || queueCapacity <= 0 || writers <= 0 {
@@ -99,6 +100,7 @@ func StartLibratoConfig(configLoader LibratoConfigLoader, queueCapacity, writers
 	return nil
 }
 
+// StartLibrato configures a new metrics instance, specifies a number of Librato writers, and starts measuring.
 func StartLibrato(email, key string, queueCapacity, writers int) error {
 	configLoader := func() LibratoConfig {
 		return LibratoConfig{Email: email, Key: key}
