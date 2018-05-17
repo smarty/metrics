@@ -122,3 +122,7 @@ var libratoConfigurationError = errors.New("You must supply non-empty email addr
 // Microseconds converts the duration value to microseconds, a commonly used unit of measurement for latency metrics.
 // This return value could easily be used as a gauge or histogram measurement.
 func Microseconds(duration time.Duration) int64 { return int64(duration.Nanoseconds() / 1000) }
+
+// Milliseconds converts the duration value to milliseconds, a possible unit of measurement for latency metrics.
+// This return value could easily be used as a gauge or histogram measurement.
+func Milliseconds(duration time.Duration) int64 { return Microseconds(duration) / 1000 }
