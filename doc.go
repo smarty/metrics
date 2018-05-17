@@ -64,7 +64,7 @@ func CountN(id CounterMetric, increment int64) bool {
 	return standard.CountN(id, increment)
 }
 
-// RawCount is similiar to Measure, except that the backend is still a counter
+// RawCount is similar to Measure, except that the backend is still a counter
 // but the application is now responsible for tracking the count rather than the metric itself tracking it.
 // A return value of false indicates the count could not occur.
 func RawCount(id CounterMetric, value int64) bool {
