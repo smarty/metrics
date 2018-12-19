@@ -24,6 +24,13 @@ func (this *Metrics) Count(id CounterMetric) bool {
 	return this.CountN(id, 1)
 }
 
+func (this *Metrics) CountIf(id CounterMetric, condition bool) bool {
+	if condition {
+		return this.Count(id)
+	}
+	return condition
+}
+
 func (this *Metrics) CountN(id CounterMetric, increment int64) bool {
 	if this == nil {
 		return standard.CountN(id, increment)
