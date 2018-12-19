@@ -52,10 +52,20 @@ func StopMeasuring() {
 	standard.StopMeasuring()
 }
 
-// Count increments the metric indicated by one.
+// Count increments the metric indicated by id.
 // A return value of false indicates the count could not occur.
 func Count(id CounterMetric) bool {
 	return standard.Count(id)
+}
+
+// CountIf increments the metric indicated by id if the supplied condition is true.
+// A return value of false indicates that the count could not occur or
+// the supplied condition was false.
+func CountIf(id CounterMetric, condition bool) bool {
+	if condition {
+		return Count(id)
+	}
+	return condition
 }
 
 // Count increments the metric indicated by the number provided.
