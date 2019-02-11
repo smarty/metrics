@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	metrics.StartLibrato(email, key, 1024, 4)
+	metrics.StartAppOptics(key, 1024, 4)
 
 	app := new(Application)
 
@@ -35,8 +35,7 @@ func (this *Application) DoStuff(x int64) {
 ////////////////////////////////////////////////////////////////////////////
 
 var (
-	email = os.Getenv("LIBRATO_EMAIL")
-	key   = os.Getenv("LIBRATO_KEY")
+	key = os.Getenv("APPOPTICS_KEY")
 
 	Counter   = metrics.AddCounter("sample-counter", time.Second*5)
 	Gauge     = metrics.AddGauge("sample-gauge", time.Second*5)

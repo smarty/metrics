@@ -95,28 +95,28 @@ func Record(id HistogramMetric, value int64) bool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// StartLibratoConfig uses the provided configLoader to configure a new metrics instance,
-// specify a number of Librato writers, and start measuring.
-func StartLibratoConfig(configLoader LibratoConfigLoader, queueCapacity, writers int) error {
+// StartAppOpticsConfig uses the provided configLoader to configure a new metrics instance,
+// specify a number of AppOptics writers, and start measuring.
+func StartAppOpticsConfig(configLoader AppOpticsConfigLoader, queueCapacity, writers int) error {
 	config := configLoader()
-	if len(config.Email) == 0 || len(config.Key) == 0 || queueCapacity <= 0 || writers <= 0 {
-		return libratoConfigurationError
+	if len(config.Key) == 0 || queueCapacity <= 0 || writers <= 0 {
+		return appOpticsConfigurationError
 	}
 
 	queue := make(chan []MetricMeasurement, queueCapacity)
 	hostname, _ := os.Hostname()
-	go newLibrato(configLoader, hostname, int32(writers)).Listen(queue)
+	go newAppOptics(configLoader, hostname, int32(writers)).Listen(queue)
 	go sendRegularMeasurements(queue)
 	return nil
 }
 
-// StartLibrato configures a new metrics instance, specifies a number of Librato writers, and starts measuring.
-func StartLibrato(email, key string, queueCapacity, writers int) error {
-	configLoader := func() LibratoConfig {
-		return LibratoConfig{Email: email, Key: key}
+// StartAppOptics configures a new metrics instance, specifies a number of AppOptics writers, and starts measuring.
+func StartAppOptics(key string, queueCapacity, writers int) error {
+	configLoader := func() AppOpticsConfig {
+		return AppOpticsConfig{Key: key}
 	}
 
-	return StartLibratoConfig(configLoader, queueCapacity, writers)
+	return StartAppOpticsConfig(configLoader, queueCapacity, writers)
 }
 
 func sendRegularMeasurements(queue chan []MetricMeasurement) {
@@ -125,7 +125,7 @@ func sendRegularMeasurements(queue chan []MetricMeasurement) {
 	}
 }
 
-var libratoConfigurationError = errors.New("You must supply non-empty email address, non-empty key, and positive queueCapacity and positive writers.")
+var appOpticsConfigurationError = errors.New("You must supply non-empty key, and positive queueCapacity and positive writers.")
 
 ///////////////////////////////////////////////////////////////////////////////
 

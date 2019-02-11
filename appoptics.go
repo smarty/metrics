@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-type Librato struct {
-	config         LibratoConfigLoader
+type AppOptics struct {
+	config         AppOpticsConfigLoader
 	hostname       string
 	maxRequests    int32
 	activeRequests int32
@@ -20,7 +20,7 @@ type Librato struct {
 	client         *http.Client
 }
 
-func newLibrato(config LibratoConfigLoader, hostname string, maxRequests int32) *Librato {
+func newAppOptics(config AppOpticsConfigLoader, hostname string, maxRequests int32) *AppOptics {
 	// TODO: validate inputs
 
 	client := &http.Client{
@@ -28,7 +28,7 @@ func newLibrato(config LibratoConfigLoader, hostname string, maxRequests int32) 
 		Timeout:   time.Duration(time.Second * 10),
 	}
 
-	return &Librato{
+	return &AppOptics{
 		config:      config,
 		hostname:    hostname,
 		maxRequests: maxRequests,
@@ -37,7 +37,7 @@ func newLibrato(config LibratoConfigLoader, hostname string, maxRequests int32) 
 	}
 }
 
-func (this *Librato) Listen(queue chan []MetricMeasurement) {
+func (this *AppOptics) Listen(queue chan []MetricMeasurement) {
 	for measurements := range queue {
 		for _, measurement := range measurements {
 			this.buffer[measurement.ID] = measurement // last one wins
@@ -48,7 +48,7 @@ func (this *Librato) Listen(queue chan []MetricMeasurement) {
 	}
 }
 
-func (this *Librato) publish() {
+func (this *AppOptics) publish() {
 	for {
 		if len(this.buffer) == 0 {
 			break // no more work to do
@@ -94,7 +94,7 @@ func countBatches(itemCount int) int {
 		return itemCount/maxMetricsPerBatch + 1
 	}
 }
-func (this *Librato) serializeNext() io.Reader {
+func (this *AppOptics) serializeNext() io.Reader {
 	written, counterIndex, gaugeIndex := 0, 0, 0
 	body := bytes.NewBuffer([]byte{})
 
@@ -123,11 +123,11 @@ func (this *Librato) serializeNext() io.Reader {
 
 	return body
 }
-func (this *Librato) buildRequest(body io.Reader) *http.Request {
-	request, _ := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", body)
+func (this *AppOptics) buildRequest(body io.Reader) *http.Request {
+	request, _ := http.NewRequest("POST", "https://api.appoptics.com/v1/measurements", body)
 	config := this.config()
-	request.SetBasicAuth(config.Email, config.Key)
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.SetBasicAuth(config.Key, "") // AppOptics only requires key as username, password blank
+	request.Header.Set("Content-Type", "application/json")
 	sendBlankUserAgent(request)
 	return request
 }
