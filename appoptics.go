@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
@@ -94,25 +94,30 @@ func countBatches(itemCount int) int {
 		return itemCount/maxMetricsPerBatch + 1
 	}
 }
-func (this *AppOptics) serializeNext() io.Reader {
-	written, counterIndex, gaugeIndex := 0, 0, 0
-	body := bytes.NewBuffer([]byte{})
+type Measurement struct {
+	Name string   `json:"name"`
+	Value int64   `json:"value"`
+	Time int64    `json:"time"`
+	Tags map[string]string `json:"tags"`
+}
+type Measurements struct {
+	Measurements []Measurement `json:"measurements"`
+}
 
-	if len(this.hostname) > 0 {
-		fmt.Fprintf(body, "source=%s&", this.hostname)
-	}
+func (this *AppOptics) serializeNext() io.Reader {
+	written := 0
+	var measurements Measurements
+
+	tags := map[string]string{"hostname":this.hostname}
 
 	for index, metric := range this.buffer {
 		unixTime := metric.Captured.Unix()
-		if metric.MetricType == counterMetricType {
-			fmt.Fprintf(body, counterFormat,
-				counterIndex, metric.Name, counterIndex, metric.Value, counterIndex, unixTime)
-			counterIndex++
-		} else {
-			fmt.Fprintf(body, gaugeFormat,
-				gaugeIndex, metric.Name, gaugeIndex, metric.Value, gaugeIndex, unixTime)
-			gaugeIndex++
-		}
+		measurements.Measurements = append(measurements.Measurements, Measurement{
+			Name: metric.Name,
+			Value: metric.Value,
+			Time: unixTime,
+			Tags: tags,
+		})
 
 		delete(this.buffer, index)
 		written++
@@ -120,11 +125,19 @@ func (this *AppOptics) serializeNext() io.Reader {
 			break
 		}
 	}
+	jsonBody, err := json.Marshal(measurements)
+	if err != nil {
+		log.Println("[ERROR] Unable to marshal measurements into json:", err)
+	}
 
-	return body
+	return bytes.NewReader(jsonBody)
 }
 func (this *AppOptics) buildRequest(body io.Reader) *http.Request {
-	request, _ := http.NewRequest("POST", "https://api.appoptics.com/v1/measurements", body)
+	request, err := http.NewRequest("POST", "https://api.appoptics.com/v1/measurements", body)
+	if err != nil {
+		log.Println("[ERROR] Unable to creating new http request:", err)
+	}
+
 	config := this.config()
 	request.SetBasicAuth(config.Key, "") // AppOptics only requires key as username, password blank
 	request.Header.Set("Content-Type", "application/json")
@@ -135,8 +148,6 @@ func sendBlankUserAgent(request *http.Request) { request.Header.Set("User-Agent"
 
 const (
 	maxMetricsPerBatch    = 256
-	counterFormat         = "counters[%d][name]=%s&counters[%d][value]=%d&counters[%d][measure_time]=%d&"
-	gaugeFormat           = "gauges[%d][name]=%s&gauges[%d][value]=%d&gauges[%d][measure_time]=%d&"
 	logRequestInterrupted = "[WARN] (Metrics) Unable to complete HTTP request:"
 	logSkippingPublish    = "[INFO] (Metrics) Skipping publish. No open lanes. (Active/Max: %d/%d)\n"
 	logTruncatingPublish  = "[INFO] (Metrics) Truncating publish. Not enough lanes to fully publish entire request. (Needed/Available: %d/%d)\n"
