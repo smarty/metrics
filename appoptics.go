@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -108,15 +109,13 @@ func (this *AppOptics) serializeNext() io.Reader {
 	written := 0
 	var measurements Measurements
 
-	tags := map[string]string{"hostname":this.hostname}
-
 	for index, metric := range this.buffer {
 		unixTime := metric.Captured.Unix()
 		measurements.Measurements = append(measurements.Measurements, Measurement{
 			Name: metric.Name,
 			Value: metric.Value,
 			Time: unixTime,
-			Tags: tags,
+			Tags: map[string]string{"hostname":this.hostname, "metrictype": intToWord(metric.MetricType)},
 		})
 
 		delete(this.buffer, index)
@@ -131,6 +130,15 @@ func (this *AppOptics) serializeNext() io.Reader {
 	}
 
 	return bytes.NewReader(jsonBody)
+}
+func intToWord(metricType int) string {
+	switch metricType {
+	case 1:
+		return "counter"
+	case 2:
+		return "gauge"
+	}
+	return "unknown("+strconv.Itoa(metricType)+")"
 }
 func (this *AppOptics) buildRequest(body io.Reader) *http.Request {
 	request, err := http.NewRequest("POST", "https://api.appoptics.com/v1/measurements", body)
