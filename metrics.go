@@ -210,8 +210,11 @@ func (this *MetricsTracker) TagHistogram(metric HistogramMetric, tagPairs ...str
 	this.addTags(int(metric), tagPairs)
 }
 func (this *MetricsTracker) addTags(metric int, tagPairs []string) {
+	if len(tagPairs) % 2 > 0 {
+		this.logger.Printf("[WARN] tags must be submitted as an even number of key/value pairs. You provided %d values.", len(tagPairs))
+		return
+	}
 	this.tags[metric] = map[string]string{}
-	// TODO: non-even number of tagPairs...
 	for i := 0; i < len(tagPairs); i += 2 {
 		this.tags[int(metric)][tagPairs[i+0]] = tagPairs[i+1]
 	}
