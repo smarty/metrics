@@ -95,11 +95,12 @@ func countBatches(itemCount int) int {
 		return itemCount/maxMetricsPerBatch + 1
 	}
 }
+
 type Measurement struct {
-	Name string   `json:"name"`
-	Value int64   `json:"value"`
-	Time int64    `json:"time"`
-	Tags map[string]string `json:"tags"`
+	Name  string            `json:"name"`
+	Value int64             `json:"value"`
+	Time  int64             `json:"time"`
+	Tags  map[string]string `json:"tags"`
 }
 type Measurements struct {
 	Measurements []Measurement `json:"measurements"`
@@ -138,7 +139,7 @@ func intToWord(metricType int) string {
 	case 2:
 		return "gauge"
 	}
-	return "unknown("+strconv.Itoa(metricType)+")"
+	return "unknown(" + strconv.Itoa(metricType) + ")"
 }
 func (this *AppOptics) buildRequest(body io.Reader) *http.Request {
 	request, err := http.NewRequest("POST", "https://api.appoptics.com/v1/measurements", body)
