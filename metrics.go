@@ -6,27 +6,38 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/smartystreets/logging"
 	"github.com/smartystreets/metrics/internal/hdrhistogram"
 )
 
 type MetricsTracker struct {
-	metrics []Metric
+	logger *logging.Logger
+
+	metrics map[int]Metric
 
 	counters   map[CounterMetric]*AtomicMetric
 	gauges     map[GaugeMetric]*AtomicMetric
 	histograms map[HistogramMetric]Histogram
 
-	tags map[int]map[string]string
+	histogramMetrics map[int]HistogramMetric
+	tags             map[int]map[string]string
 
 	started int32
 }
 
 func New() *MetricsTracker {
 	return &MetricsTracker{
-		counters:   make(map[CounterMetric]*AtomicMetric),
-		gauges:     make(map[GaugeMetric]*AtomicMetric),
-		histograms: make(map[HistogramMetric]Histogram),
+		metrics:          make(map[int]Metric),
+		counters:         make(map[CounterMetric]*AtomicMetric),
+		gauges:           make(map[GaugeMetric]*AtomicMetric),
+		histograms:       make(map[HistogramMetric]Histogram),
+		histogramMetrics: make(map[int]HistogramMetric),
+		tags:             make(map[int]map[string]string),
 	}
+}
+
+func (this *MetricsTracker) nextID() int {
+	return len(this.metrics) + len(this.histograms)
 }
 
 func (this *MetricsTracker) AddCounter(name string, update time.Duration) CounterMetric {
@@ -34,8 +45,8 @@ func (this *MetricsTracker) AddCounter(name string, update time.Duration) Counte
 		return MetricConflict
 	}
 	metric := NewCounter(name, update)
-	id := CounterMetric(len(this.metrics))
-	this.metrics = append(this.metrics, metric)
+	id := CounterMetric(this.nextID())
+	this.metrics[int(id)] = metric
 	this.counters[id] = metric
 	return id
 }
@@ -44,8 +55,8 @@ func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMet
 		return MetricConflict
 	}
 	metric := NewGauge(name, update)
-	id := GaugeMetric(len(this.metrics))
-	this.metrics = append(this.metrics, metric)
+	id := GaugeMetric(this.nextID())
+	this.metrics[int(id)] = metric
 	this.gauges[id] = metric
 	return id
 }
@@ -59,7 +70,7 @@ func (this *MetricsTracker) AddHistogram(name string, update time.Duration,
 		return MetricConflict
 	}
 	id, histogram := this.addHistogram(min, max, resolution)
-	this.addHistogramMetrics(name, update, histogram, quantiles)
+	this.addHistogramMetrics(id, name, update, histogram, quantiles)
 	return id
 }
 func histogramOptionsAreValid(min, max int64, resolution int) bool {
@@ -67,23 +78,30 @@ func histogramOptionsAreValid(min, max int64, resolution int) bool {
 }
 func (this *MetricsTracker) addHistogram(min, max int64, resolution int) (HistogramMetric, Histogram) {
 	mutex := new(sync.RWMutex)
-	id := HistogramMetric(len(this.histograms))
+	id := HistogramMetric(this.nextID())
 	histogram := hdrhistogram.New(min, max, resolution)
 	synchronized := NewSynchronizedHistogram(histogram, mutex.RLocker(), mutex)
 	this.histograms[id] = synchronized
 	return id, synchronized
 }
-func (this *MetricsTracker) addHistogramMetrics(
+func (this *MetricsTracker) addHistogramMetrics(id HistogramMetric,
 	name string, update time.Duration, histogram Histogram, quantiles []float64) {
 
-	this.metrics = append(this.metrics, NewHistogramMinMetric(name, histogram, update))
-	this.metrics = append(this.metrics, NewHistogramMaxMetric(name, histogram, update))
-	this.metrics = append(this.metrics, NewHistogramMeanMetric(name, histogram, update))
-	this.metrics = append(this.metrics, NewHistogramStandardDeviationMetric(name, histogram, update))
-	this.metrics = append(this.metrics, NewHistogramTotalCountMetric(name, histogram, update))
-
+	var all = []Metric{
+		NewHistogramMinMetric(name, histogram, update),
+		NewHistogramMaxMetric(name, histogram, update),
+		NewHistogramMeanMetric(name, histogram, update),
+		NewHistogramStandardDeviationMetric(name, histogram, update),
+		NewHistogramTotalCountMetric(name, histogram, update),
+	}
 	for _, quantile := range quantiles {
-		this.metrics = append(this.metrics, NewHistogramQuantileMetric(name, quantile, histogram, update))
+		all = append(all, NewHistogramQuantileMetric(name, quantile, histogram, update))
+	}
+
+	for _, metric := range all {
+		next := this.nextID()
+		this.metrics[next] = metric
+		this.histogramMetrics[next] = id
 	}
 }
 
@@ -157,18 +175,21 @@ func (this *MetricsTracker) Record(id HistogramMetric, value int64) bool {
 	return found
 }
 
-func (this *MetricsTracker) TakeMeasurements(now time.Time) []MetricMeasurement {
+func (this *MetricsTracker) TakeMeasurements(now time.Time) (measurements []MetricMeasurement) {
 	if !this.isRunning() {
 		return nil
 	}
-	measurements := []MetricMeasurement{}
 	for id, metric := range this.metrics {
 		if metric.MeasurementIsOverdue(now) {
 			metric.ScheduleNextMeasurement(now)
 			measurement := metric.Measure()
 			measurement.ID = id
 			measurement.Captured = now
-			measurement.Tags = this.tags[id]
+			if histogram, ok := this.histogramMetrics[id]; ok {
+				measurement.Tags = this.tags[int(histogram)]
+			} else {
+				measurement.Tags = this.tags[id]
+			}
 			measurements = append(measurements, measurement)
 		}
 	}
@@ -191,6 +212,7 @@ func (this *MetricsTracker) TagHistogram(metric HistogramMetric, tagPairs ...str
 func (this *MetricsTracker) addTags(metric int, tagPairs []string) {
 	this.tags[metric] = map[string]string{}
 	// TODO: non-even number of tagPairs...
+	this.logger.Println("[WARN] asdf")
 	for i := 0; i < len(tagPairs); i += 2 {
 		this.tags[int(metric)][tagPairs[0]] = tagPairs[1]
 	}
