@@ -23,13 +23,15 @@ func AddCounter(name string, reportingFrequency time.Duration) CounterMetric {
 	return standard.AddCounter(name, reportingFrequency)
 }
 
-// TODO: doc string
+// TagCounter associates key/value string pairs with the provided metric id.
 func TagCounter(id CounterMetric, tagPairs ...string) {
 	standard.TagCounter(id, tagPairs...)
 }
+// TagGauge associates key/value string pairs with the provided metric id.
 func TagGauge(id GaugeMetric, tagPairs ...string) {
 	standard.TagGauge(id, tagPairs...)
 }
+// TagHistogram associates key/value string pairs with the provided metric id.
 func TagHistogram(id HistogramMetric, tagPairs ...string) {
 	standard.TagHistogram(id, tagPairs...)
 }
