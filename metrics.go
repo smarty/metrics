@@ -10,11 +10,15 @@ import (
 )
 
 type MetricsTracker struct {
-	metrics    []Metric
+	metrics []Metric
+
 	counters   map[CounterMetric]*AtomicMetric
 	gauges     map[GaugeMetric]*AtomicMetric
 	histograms map[HistogramMetric]Histogram
-	started    int32
+
+	tags map[int]map[string]string
+
+	started int32
 }
 
 func New() *MetricsTracker {
@@ -164,6 +168,7 @@ func (this *MetricsTracker) TakeMeasurements(now time.Time) []MetricMeasurement 
 			measurement := metric.Measure()
 			measurement.ID = id
 			measurement.Captured = now
+			measurement.Tags = this.tags[id]
 			measurements = append(measurements, measurement)
 		}
 	}
@@ -172,4 +177,21 @@ func (this *MetricsTracker) TakeMeasurements(now time.Time) []MetricMeasurement 
 
 func (this *MetricsTracker) isRunning() bool {
 	return atomic.LoadInt32(&this.started) > 0
+}
+
+func (this *MetricsTracker) TagCounter(metric CounterMetric, tagPairs ...string) {
+	this.addTags(int(metric), tagPairs)
+}
+func (this *MetricsTracker) TagGauge(metric GaugeMetric, tagPairs ...string) {
+	this.addTags(int(metric), tagPairs)
+}
+func (this *MetricsTracker) TagHistogram(metric HistogramMetric, tagPairs ...string) {
+	this.addTags(int(metric), tagPairs)
+}
+func (this *MetricsTracker) addTags(metric int, tagPairs []string) {
+	this.tags[metric] = map[string]string{}
+	// TODO: non-even number of tagPairs...
+	for i := 0; i < len(tagPairs); i += 2 {
+		this.tags[int(metric)][tagPairs[0]] = tagPairs[1]
+	}
 }

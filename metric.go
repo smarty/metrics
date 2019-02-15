@@ -28,6 +28,7 @@ type MetricMeasurement struct {
 	Name       string
 	MetricType int
 	Value      int64
+	Tags       map[string]string
 }
 
 ////////////////////////////////////////////////////////////////////////////

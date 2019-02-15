@@ -113,10 +113,10 @@ func (this *AppOptics) serializeNext() io.Reader {
 	for index, metric := range this.buffer {
 		unixTime := metric.Captured.Unix()
 		measurements.Measurements = append(measurements.Measurements, Measurement{
-			Name: metric.Name,
+			Name:  metric.Name,
 			Value: metric.Value,
-			Time: unixTime,
-			Tags: map[string]string{"hostname":this.hostname, "metrictype": intToWord(metric.MetricType)},
+			Time:  unixTime,
+			Tags:  this.buildTags(metric),
 		})
 
 		delete(this.buffer, index)
@@ -131,6 +131,16 @@ func (this *AppOptics) serializeNext() io.Reader {
 	}
 
 	return bytes.NewReader(jsonBody)
+}
+
+func (this *AppOptics) buildTags(metric MetricMeasurement) map[string]string {
+	tags := make(map[string]string)
+	for key, value := range metric.Tags {
+		tags[key] = value
+	}
+	tags["hostname"] = this.hostname
+	tags["metrictype"] = intToWord(metric.MetricType)
+	return tags
 }
 func intToWord(metricType int) string {
 	switch metricType {

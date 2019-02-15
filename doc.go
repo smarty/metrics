@@ -23,6 +23,17 @@ func AddCounter(name string, reportingFrequency time.Duration) CounterMetric {
 	return standard.AddCounter(name, reportingFrequency)
 }
 
+// TODO: doc string
+func TagCounter(id CounterMetric, tagPairs ...string) {
+	standard.TagCounter(id, tagPairs...)
+}
+func TagGauge(id GaugeMetric, tagPairs ...string) {
+	standard.TagGauge(id, tagPairs...)
+}
+func TagHistogram(id HistogramMetric, tagPairs ...string) {
+	standard.TagHistogram(id, tagPairs...)
+}
+
 // AddGauge registers a named gauge metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.

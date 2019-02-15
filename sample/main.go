@@ -41,3 +41,7 @@ var (
 	Gauge     = metrics.AddGauge("sample-gauge", time.Second*5)
 	Histogram = metrics.AddHistogram("sample-histogram", time.Second*5, 0, 1000, 5, 50, 90, 99, 99.9)
 )
+
+func init() {
+	metrics.TagCounter(Counter, "color", "blue")
+}
