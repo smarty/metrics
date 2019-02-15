@@ -213,6 +213,6 @@ func (this *MetricsTracker) addTags(metric int, tagPairs []string) {
 	this.tags[metric] = map[string]string{}
 	// TODO: non-even number of tagPairs...
 	for i := 0; i < len(tagPairs); i += 2 {
-		this.tags[int(metric)][tagPairs[0]] = tagPairs[1]
+		this.tags[int(metric)][tagPairs[i+0]] = tagPairs[i+1]
 	}
 }

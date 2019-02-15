@@ -83,7 +83,7 @@ func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 	counter1 := this.tracker.AddCounter("counter1", time.Nanosecond)
 	counter2 := this.tracker.AddCounter("counter2", time.Nanosecond)
 
-	this.tracker.TagCounter(counter1, "color", "plaid")
+	this.tracker.TagCounter(counter1, "color", "plaid", "size", "XL")
 	this.tracker.TagCounter(counter2, "color", "fuscia")
 
 	this.tracker.StartMeasuring()
@@ -98,7 +98,7 @@ func (this *MetricsTrackerFixture) TestMeasuringCounters() {
 			Name:       "counter1",
 			MetricType: counterMetricType,
 			Value:      10,
-			Tags:       map[string]string{"color": "plaid"},
+			Tags:       map[string]string{"color": "plaid", "size": "XL"},
 		},
 		{
 			Captured:   this.now,
