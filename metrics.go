@@ -200,6 +200,16 @@ func (this *MetricsTracker) isRunning() bool {
 	return atomic.LoadInt32(&this.started) > 0
 }
 
+func (this *MetricsTracker) TagAll(tagPairs ...string) {
+	for id := range this.metrics {
+		if histogram, ok := this.histogramMetrics[id]; ok {
+			this.addTags(int(histogram), tagPairs)
+		} else {
+			this.addTags(id, tagPairs)
+		}
+	}
+}
+
 func (this *MetricsTracker) TagCounter(metric CounterMetric, tagPairs ...string) {
 	this.addTags(int(metric), tagPairs)
 }

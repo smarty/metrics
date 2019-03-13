@@ -204,7 +204,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      1,
 			Name:       "histogram1_min",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -212,7 +212,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      100,
 			Name:       "histogram1_max",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -220,7 +220,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      50,
 			Name:       "histogram1_mean",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -228,7 +228,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      28,
 			Name:       "histogram1_stddev",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -236,7 +236,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      100,
 			Name:       "histogram1_total",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -244,7 +244,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      50,
 			Name:       "histogram1_50.000",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 		{
 			Captured:   this.now,
@@ -252,7 +252,7 @@ func (this *MetricsTrackerFixture) TestMeasuringHistograms() {
 			Value:      99,
 			Name:       "histogram1_99.000",
 			MetricType: gaugeMetricType,
-			Tags:       map[string]string{"color":"plaid"},
+			Tags:       map[string]string{"color": "plaid"},
 		},
 	})
 }
@@ -345,4 +345,18 @@ func (this *MetricsTrackerFixture) TestOddNumberOfTagsIgnored() {
 		},
 	})
 	this.So(this.tracker.logger.Log.String(), should.ContainSubstring, "[WARN] tags must be submitted as an even number of key/value pairs")
+}
+
+func (this *MetricsTrackerFixture) TestTagAll() {
+	this.tracker.AddCounter("counter", time.Nanosecond)
+	this.tracker.AddHistogram("histogram", time.Nanosecond, 0, 10, 3, 90)
+	this.tracker.AddGauge("gauge", time.Nanosecond)
+	tags := map[string]string{"testing": "true", "valid": "false"}
+	this.tracker.TagAll("testing", tags["testing"], "valid", tags["valid"])
+	this.tracker.StartMeasuring()
+	for _, measure := range this.measure() {
+		actual := map[string]map[string]string{measure.Name: measure.Tags}
+		expected := map[string]map[string]string{measure.Name: tags}
+		this.So(actual, should.Resemble, expected)
+	}
 }
