@@ -77,8 +77,15 @@ func (this *AppOptics) publish() {
 			go func() {
 				response, err := this.client.Do(request)
 				if response != nil && response.Body != nil {
-					io.Copy(ioutil.Discard, response.Body)
-					response.Body.Close()
+					if response.StatusCode >= 200 && response.StatusCode < 300 {
+						io.Copy(ioutil.Discard, response.Body)
+						response.Body.Close()
+					} else {
+						buf := new(bytes.Buffer)
+						buf.ReadFrom(response.Body)
+						newStr := buf.String()
+						log.Println("AppOptics:", response.StatusCode, newStr)
+					}
 				} else if err != nil {
 					log.Println(logRequestInterrupted, err)
 				}
@@ -136,7 +143,10 @@ func (this *AppOptics) serializeNext() io.Reader {
 func (this *AppOptics) buildTags(metric MetricMeasurement) map[string]string {
 	tags := make(map[string]string)
 	for key, value := range metric.Tags {
-		tags[key] = value
+		// filter AppOptics invalid tags
+		if key != "" && value != "" {
+			tags[key] = value
+		}
 	}
 	tags["hostname"] = this.hostname
 	tags["metrictype"] = intToWord(metric.MetricType)
