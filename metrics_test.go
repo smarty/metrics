@@ -347,6 +347,21 @@ func (this *MetricsTrackerFixture) TestOddNumberOfTagsIgnored() {
 	this.So(this.tracker.logger.Log.String(), should.ContainSubstring, "[WARN] tags must be submitted as an even number of key/value pairs")
 }
 
+func (this *MetricsTrackerFixture) TestNoTags_Ignored() {
+	counter := this.tracker.AddCounter("counter", time.Nanosecond)
+	this.tracker.TagCounter(counter)
+	this.tracker.StartMeasuring()
+	this.So(this.measure(), should.Resemble, []MetricMeasurement{
+		{
+			Captured:   this.now,
+			ID:         0,
+			Name:       "counter",
+			MetricType: counterMetricType,
+			Value:      0,
+			Tags:       nil,
+		},
+	})
+}
 func (this *MetricsTrackerFixture) TestTagAll() {
 	this.tracker.AddCounter("counter", time.Nanosecond)
 	this.tracker.AddHistogram("histogram", time.Nanosecond, 0, 10, 3, 90)
