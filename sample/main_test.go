@@ -3,9 +3,9 @@ package main
 import (
 	"testing"
 
+	"github.com/smartystreets/assertions/should"
 	"github.com/smartystreets/gunit"
 	"github.com/smartystreets/metrics"
-	"github.com/smartystreets/assertions/should"
 )
 
 func TestApplicationFixture(t *testing.T) {
@@ -30,4 +30,3 @@ func (this *ApplicationFixture) TestMetricsAreMeasured() {
 	this.So(this.app.metrics.GaugeValue(Gauge), should.Equal, 42)
 	this.So(this.app.metrics.HistogramValue(Histogram).Max(), should.Equal, 42)
 }
-
