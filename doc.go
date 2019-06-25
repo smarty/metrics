@@ -16,6 +16,17 @@ const MetricConflict = -1
 
 var standard = New()
 
+func InitializeTags(tags string, reader func(string) string) {
+	var pairs []string
+
+	for _, tag := range strings.Split(tags, "|") {
+		value := reader(tag)
+		pairs = append(pairs, tag, value)
+	}
+
+	TagAll(pairs...)
+}
+
 // AddCounter registers a named counter metric along with the desired reporting frequency.
 // The function is meant to be called *only* at application startup and is not thread safe.
 // A negative return value indicates that the registration was unsuccessful.
