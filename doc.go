@@ -17,6 +17,10 @@ const MetricConflict = -1
 
 var standard = New()
 
+func InitializeEnvironmentTags(tags string) {
+	InitializeTags(tags, os.Getenv)
+}
+
 func InitializeTags(tags string, reader func(string) string) {
 	var pairs []string
 
