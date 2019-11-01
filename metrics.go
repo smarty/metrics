@@ -13,6 +13,7 @@ import (
 
 type MetricsTracker struct {
 	logger *logging.Logger
+	lock   sync.Mutex
 
 	metrics map[int]Metric
 
@@ -42,6 +43,8 @@ func (this *MetricsTracker) nextID() int {
 }
 
 func (this *MetricsTracker) AddCounter(name string, update time.Duration) CounterMetric {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	if name = cleanName(name); !this.canAddMetric(name, update) {
 		return MetricConflict
 	}
@@ -52,6 +55,8 @@ func (this *MetricsTracker) AddCounter(name string, update time.Duration) Counte
 	return id
 }
 func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMetric {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	if name = cleanName(name); !this.canAddMetric(name, update) {
 		return MetricConflict
 	}
@@ -61,8 +66,11 @@ func (this *MetricsTracker) AddGauge(name string, update time.Duration) GaugeMet
 	this.gauges[id] = metric
 	return id
 }
-func (this *MetricsTracker) AddHistogram(name string, update time.Duration,
-	min, max int64, resolution int, quantiles ...float64) HistogramMetric {
+func (this *MetricsTracker) AddHistogram(
+	name string, update time.Duration, min, max int64, resolution int, quantiles ...float64,
+) HistogramMetric {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 
 	if name = cleanName(name); !this.canAddMetric(name, update) {
 		return MetricConflict
