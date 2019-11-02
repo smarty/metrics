@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -70,7 +71,7 @@ func (this *AppOptics) publish() {
 		}
 
 		for i := int32(0); i < needed; i++ {
-			body := this.serializeNext()
+			body, rawRequestBody := this.serializeNext()
 			request := this.buildRequest(body)
 			atomic.AddInt32(&this.activeRequests, 1)
 
@@ -78,13 +79,12 @@ func (this *AppOptics) publish() {
 				response, err := this.client.Do(request)
 				if response != nil && response.Body != nil {
 					if response.StatusCode >= 200 && response.StatusCode < 300 {
-						io.Copy(ioutil.Discard, response.Body)
-						response.Body.Close()
+						_, _ = io.Copy(ioutil.Discard, response.Body)
+						_ = response.Body.Close()
 					} else {
-						buf := new(bytes.Buffer)
-						buf.ReadFrom(response.Body)
-						newStr := buf.String()
-						log.Println("AppOptics:", response.StatusCode, newStr)
+						requestHeaders, _ := httputil.DumpRequest(request, false)
+						fullResponse, _ := httputil.DumpResponse(response, true)
+						log.Printf("[INFO] AppOptics request failed:\n-----------\n%s\n%s\nResponse:\n%s\n-----------\n", string(requestHeaders), rawRequestBody, string(fullResponse))
 					}
 				} else if err != nil {
 					log.Println(logRequestInterrupted, err)
@@ -113,7 +113,7 @@ type Measurements struct {
 	Measurements []Measurement `json:"measurements"`
 }
 
-func (this *AppOptics) serializeNext() io.Reader {
+func (this *AppOptics) serializeNext() (io.Reader, string) {
 	written := 0
 	var measurements Measurements
 
@@ -137,7 +137,7 @@ func (this *AppOptics) serializeNext() io.Reader {
 		log.Println("[ERROR] Unable to marshal measurements into json:", err)
 	}
 
-	return bytes.NewReader(jsonBody)
+	return bytes.NewReader(jsonBody), string(jsonBody)
 }
 
 func (this *AppOptics) buildTags(metric MetricMeasurement) map[string]string {
