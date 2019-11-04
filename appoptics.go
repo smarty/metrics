@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -26,8 +27,11 @@ func newAppOptics(config AppOpticsConfigLoader, hostname string, maxRequests int
 	// TODO: validate inputs
 
 	client := &http.Client{
-		Transport: &http.Transport{DisableCompression: true},
-		Timeout:   time.Duration(time.Second * 10),
+		Transport: &http.Transport{
+			DisableCompression: true,
+			TLSNextProto:       map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
+		},
+		Timeout: time.Duration(time.Second * 10),
 	}
 
 	return &AppOptics{
