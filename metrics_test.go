@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestExporter(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	exporter := NewExporter()
 
