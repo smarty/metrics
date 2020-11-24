@@ -2,7 +2,6 @@ package metrics2
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"sync/atomic"
 )
@@ -18,9 +17,7 @@ func NewCounter(name string, options ...option) Counter {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value int64
-	this := simpleCounter{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
-	config.Exporter.Add(this)
-	return this
+	return simpleCounter{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
 }
 func (this simpleCounter) Type() string            { return "counter" }
 func (this simpleCounter) Name() string            { return this.name }
@@ -43,9 +40,7 @@ func NewGauge(name string, options ...option) Gauge {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value int64
-	this := simpleGauge{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
-	config.Exporter.Add(this)
-	return this
+	return simpleGauge{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
 }
 
 func (this simpleGauge) Type() string           { return "gauge" }
@@ -67,7 +62,6 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Exporter    Exporter
 }
 
 func (singleton) Description(value string) option {
@@ -75,9 +69,6 @@ func (singleton) Description(value string) option {
 }
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
-}
-func (singleton) Exporter(value Exporter) option {
-	return func(this *configuration) { this.Exporter = value }
 }
 
 func (singleton) apply(options ...option) option {
@@ -89,9 +80,7 @@ func (singleton) apply(options ...option) option {
 	}
 }
 func (singleton) defaults(options ...option) []option {
-	return append([]option{
-		Options.Exporter(nop{}),
-	}, options...)
+	return append([]option{}, options...)
 }
 
 func (this configuration) RenderLabels() (result string) {
@@ -105,8 +94,3 @@ func (this configuration) RenderLabels() (result string) {
 	result = strings.TrimSuffix(result, ", ")
 	return fmt.Sprintf("{ %s }", result)
 }
-
-type nop struct{}
-
-func (nop) ServeHTTP(http.ResponseWriter, *http.Request) {}
-func (nop) Add(...metric)                                {}

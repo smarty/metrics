@@ -12,19 +12,16 @@ func TestExporter(t *testing.T) {
 	exporter := NewExporter()
 
 	counter := NewCounter("my_counter",
-		Options.Description("counter description"),
-		Options.Exporter(exporter))
+		Options.Description("counter description"))
 	counterWithLabels := NewCounter("my_counter_with_labels",
 		Options.Description("counter description"),
-		Options.Label("counter_label_key", "counter_label_value"),
-		Options.Exporter(exporter))
+		Options.Label("counter_label_key", "counter_label_value"))
 	gauge := NewGauge("my_gauge",
-		Options.Description("gauge description"),
-		Options.Exporter(exporter))
+		Options.Description("gauge description"))
 	gaugeWithLabels := NewGauge("my_gauge_with_labels",
 		Options.Description("gauge description"),
-		Options.Label("gauge_label_key", "gauge_label_value"),
-		Options.Exporter(exporter))
+		Options.Label("gauge_label_key", "gauge_label_value"))
+	exporter.Add(counter, counterWithLabels, gauge, gaugeWithLabels)
 
 	counter.Increment()
 	counterWithLabels.IncrementN(2)
