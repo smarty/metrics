@@ -6,14 +6,14 @@ import (
 )
 
 type defaultExporter struct {
-	metrics []metric
+	metrics []Metric
 }
 
 func NewExporter() Exporter {
 	return &defaultExporter{}
 }
 
-func (this *defaultExporter) Add(items ...metric) {
+func (this *defaultExporter) Add(items ...Metric) {
 	this.metrics = append(this.metrics, items...)
 }
 

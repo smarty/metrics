@@ -2,7 +2,7 @@ package metrics2
 
 import "net/http"
 
-type metric interface {
+type Metric interface {
 	Type() string
 	Name() string
 	Description() string
@@ -13,12 +13,12 @@ type metric interface {
 }
 
 type Counter interface {
-	metric
+	Metric
 	IncrementN(uint64)
 }
 
 type Gauge interface {
-	metric
+	Metric
 	IncrementN(int64)
 	Measure(int64)
 }
@@ -26,5 +26,5 @@ type Gauge interface {
 type Exporter interface {
 	http.Handler
 
-	Add(...metric)
+	Add(...Metric)
 }
