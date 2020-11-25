@@ -9,12 +9,12 @@ import (
 )
 
 func main() {
-	counter := metrics2.NewCounter("my_counter",
-		metrics2.Options.Description("this is a description"),
-		metrics2.Options.Label("label_key", "label_value"),
+	counter := metrics.NewCounter("my_counter",
+		metrics.Options.Description("this is a description"),
+		metrics.Options.Label("label_key", "label_value"),
 	)
 
-	exporter := metrics2.NewExporter()
+	exporter := metrics.NewExporter()
 	exporter.Add(counter)
 
 	go func() {
