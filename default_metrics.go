@@ -17,7 +17,12 @@ func NewCounter(name string, options ...option) Counter {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value int64
-	return simpleCounter{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
+	return simpleCounter{
+		name:        config.Name,
+		description: config.Description,
+		labels:      config.RenderLabels(),
+		value:       &value,
+	}
 }
 func (this simpleCounter) Type() string            { return "counter" }
 func (this simpleCounter) Name() string            { return this.name }
@@ -40,7 +45,12 @@ func NewGauge(name string, options ...option) Gauge {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value int64
-	return simpleGauge{name: config.Name, description: config.Description, labels: config.RenderLabels(), value: &value}
+	return simpleGauge{
+		name:        config.Name,
+		description: config.Description,
+		labels:      config.RenderLabels(),
+		value:       &value,
+	}
 }
 
 func (this simpleGauge) Type() string           { return "gauge" }
