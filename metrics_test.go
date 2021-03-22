@@ -69,7 +69,14 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_labels histogram description
 # TYPE my_histogram_with_labels histogram
-my_histogram_with_labels{ histogram_label_key="histogram_label_value" } 6
+my_histogram_with_buckets{le="50.000", histogram_label_key="histogram_label_value" } 1
+my_histogram_with_buckets{le="90.000", histogram_label_key="histogram_label_value" } 2
+my_histogram_with_buckets{le="99.000", histogram_label_key="histogram_label_value" } 3
+my_histogram_with_buckets{le="99.900", histogram_label_key="histogram_label_value" } 4
+my_histogram_with_buckets{le="99.990", histogram_label_key="histogram_label_value" } 5
+my_histogram_with_buckets{le="99.999", histogram_label_key="histogram_label_value" } 6
+my_histogram_with_buckets_sum 21
+my_histogram_with_buckets_count 6
 `)
 
 type TestMetrics struct {
