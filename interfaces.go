@@ -23,6 +23,11 @@ type Gauge interface {
 	Measure(int64)
 }
 
+type Histogram interface {
+	Metric
+	Observe(uint64)
+}
+
 type Exporter interface {
 	http.Handler
 

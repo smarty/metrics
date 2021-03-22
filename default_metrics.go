@@ -64,6 +64,33 @@ func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+type simpleHistogram struct {
+	name        string
+	description string
+	labels      string
+	value       *int64
+}
+
+func NewHistogram(name string, options ...option) Histogram {
+	config := configuration{Name: name}
+	Options.apply(options...)(&config)
+	var value int64
+	return simpleHistogram{
+		name:        config.Name,
+		description: config.Description,
+		labels:      config.RenderLabels(),
+		value:       &value,
+	}
+}
+func (this simpleHistogram) Type() string            { return "histogram" }
+func (this simpleHistogram) Name() string            { return this.name }
+func (this simpleHistogram) Description() string     { return this.description }
+func (this simpleHistogram) Labels() string          { return this.labels }
+func (this simpleHistogram) Value() int64            { return atomic.LoadInt64(this.value) }
+func (this simpleHistogram) Increment()              { atomic.AddInt64(this.value, 1) }
+func (this simpleHistogram) Observe(value uint64)    { atomic.AddInt64(this.value, int64(value)) }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var Options singleton
 
 type singleton struct{}
