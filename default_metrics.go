@@ -68,6 +68,7 @@ type simpleHistogram struct {
 	name        string
 	description string
 	labels      string
+	buckets     []string
 	value       *int64
 }
 
@@ -79,6 +80,7 @@ func NewHistogram(name string, options ...option) Histogram {
 		name:        config.Name,
 		description: config.Description,
 		labels:      config.RenderLabels(),
+		buckets:     config.Buckets,
 		value:       &value,
 	}
 }
@@ -86,6 +88,7 @@ func (this simpleHistogram) Type() string            { return "histogram" }
 func (this simpleHistogram) Name() string            { return this.name }
 func (this simpleHistogram) Description() string     { return this.description }
 func (this simpleHistogram) Labels() string          { return this.labels }
+func (this simpleHistogram) Buckets() []string       { return this.buckets }
 func (this simpleHistogram) Value() int64            { return atomic.LoadInt64(this.value) }
 func (this simpleHistogram) Increment()              { atomic.AddInt64(this.value, 1) } // Satisfy Interface
 func (this simpleHistogram) Observe(value uint64)    { atomic.AddInt64(this.value, int64(value)) }
