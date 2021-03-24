@@ -67,16 +67,9 @@ my_gauge 3
 # TYPE my_gauge_with_labels gauge
 my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
-# HELP my_histogram_with_labels histogram description
-# TYPE my_histogram_with_labels histogram
-my_histogram_with_buckets{le="50.000", histogram_label_key="histogram_label_value" } 1
-my_histogram_with_buckets{le="90.000", histogram_label_key="histogram_label_value" } 2
-my_histogram_with_buckets{le="99.000", histogram_label_key="histogram_label_value" } 3
-my_histogram_with_buckets{le="99.900", histogram_label_key="histogram_label_value" } 4
-my_histogram_with_buckets{le="99.990", histogram_label_key="histogram_label_value" } 5
-my_histogram_with_buckets{le="99.999", histogram_label_key="histogram_label_value" } 6
-my_histogram_with_buckets_sum 21
-my_histogram_with_buckets_count 6
+# HELP my_histogram_with_buckets histogram description
+# TYPE my_histogram_with_buckets histogram
+my_histogram_with_buckets{ histogram_label_key="histogram_label_value" } 6
 `)
 
 type TestMetrics struct {
@@ -102,7 +95,7 @@ func NewTestMetrics() *TestMetrics {
 		Options.Description("gauge description"),
 		Options.Label("gauge_label_key", "gauge_label_value"),
 	)
-	histogram1 := NewHistogram("my_histogram_with_labels",
+	histogram1 := NewHistogram("my_histogram_with_buckets",
 		Options.Description("histogram description"),
 		Options.Label("histogram_label_key", "histogram_label_value"),
 	)
