@@ -23,7 +23,7 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 		_, _ = fmt.Fprintf(response, outputFormat,
 			item.Name(), item.Description(),
 			item.Name(), item.Type(),
-			item.Name(), item.Labels(), item.Value())
+			item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
 	}
 }
 

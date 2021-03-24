@@ -99,6 +99,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
+	Buckets		[]string
 }
 
 func (singleton) Description(value string) option {
@@ -107,7 +108,9 @@ func (singleton) Description(value string) option {
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
-
+func (singleton) Bucket(value string) option {
+	return func(this *configuration) { this.Buckets = append(this.Buckets, value) }
+}
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {
 		this.Labels = map[string]string{}
