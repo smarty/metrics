@@ -22,14 +22,17 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 	for _, item := range this.metrics {
 		_, _ = fmt.Fprintf(response, outputFormatHelp, item.Name(), item.Description())
 		_, _ = fmt.Fprintf(response, outputFormatType, item.Name(), item.Type())
-		if item.Type() == "Histogram" {
-			_, _ = fmt.Fprintf(response, outputFormatMetric, item.Name(), item.(Histogram).Buckets(), item.Value())
+		if item.Type() == "histogram" {
+			for _, bucket := range item.(Histogram).Buckets() {
+				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), bucket, item.Value())
+			}
 		} else {
-			_, _ = fmt.Fprintf(response, outputFormatMetric, item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
+			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
 		}
 	}
 }
 
 const outputFormatHelp = "\n# HELP %s %s\n"
 const outputFormatType = "# TYPE %s %s\n"
-const outputFormatMetric = "%s%s %d\n"
+const outputFormatLabels = "%s%s %d\n"
+const outputFormatBuckets = "%s{le=\"%6.3f\"} %d\n"

@@ -68,7 +68,7 @@ type simpleHistogram struct {
 	name        string
 	description string
 	labels      string
-	buckets     []string
+	buckets     []float64
 	value       *int64
 }
 
@@ -88,7 +88,7 @@ func (this simpleHistogram) Type() string            { return "histogram" }
 func (this simpleHistogram) Name() string            { return this.name }
 func (this simpleHistogram) Description() string     { return this.description }
 func (this simpleHistogram) Labels() string          { return this.labels }
-func (this simpleHistogram) Buckets() []string       { return this.buckets }
+func (this simpleHistogram) Buckets() []float64       { return this.buckets }
 func (this simpleHistogram) Value() int64            { return atomic.LoadInt64(this.value) }
 func (this simpleHistogram) Increment()              { atomic.AddInt64(this.value, 1) } // Satisfy Interface
 func (this simpleHistogram) Observe(value uint64)    { atomic.AddInt64(this.value, int64(value)) }
@@ -102,7 +102,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Buckets		[]string
+	Buckets		[]float64
 }
 
 func (singleton) Description(value string) option {
@@ -111,7 +111,7 @@ func (singleton) Description(value string) option {
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
-func (singleton) Bucket(value string) option {
+func (singleton) Bucket(value float64) option {
 	return func(this *configuration) { this.Buckets = append(this.Buckets, value) }
 }
 func (singleton) apply(options ...option) option {
