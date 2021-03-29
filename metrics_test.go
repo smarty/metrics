@@ -15,7 +15,7 @@ func TestMetricsValues(t *testing.T) {
 	metrics.gauge1.Increment()
 	metrics.gauge1.IncrementN(2)
 	metrics.gauge2.Measure(4)
-	metrics.histogram1.Observe(6)
+	metrics.histogram1.Observe(20874)
 
 	assertEqual(t, int64(1), metrics.counter1.Value())
 	assertEqual(t, int64(2), metrics.counter2.Value())
@@ -31,7 +31,7 @@ func TestMetricsRendering(t *testing.T) {
 	metrics.counter2.IncrementN(2)
 	metrics.gauge1.IncrementN(3)
 	metrics.gauge2.Measure(4)
-	metrics.histogram1.Observe(6)
+	metrics.histogram1.Observe(66)
 
 	exporter := NewExporter()
 	exporter.Add(
@@ -69,7 +69,14 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_buckets histogram description
 # TYPE my_histogram_with_buckets histogram
-my_histogram_with_buckets{le="50.000"} 6
+my_histogram_with_buckets{le="0.000"} 0
+my_histogram_with_buckets{le="1.000"} 0
+my_histogram_with_buckets{le="20.000"} 0
+my_histogram_with_buckets{le="30.000"} 0
+my_histogram_with_buckets{le="50.000"} 0
+my_histogram_with_buckets{le="100.000"} 1
+my_histogram_with_buckets{le="300.000"} 1
+my_histogram_with_buckets{le="500.000"} 1
 `)
 
 type TestMetrics struct {
@@ -97,7 +104,14 @@ func NewTestMetrics() *TestMetrics {
 	)
 	histogram1 := NewHistogram("my_histogram_with_buckets",
 		Options.Description("histogram description"),
-		Options.Bucket(50.000),
+		Options.Bucket(0.0),
+		Options.Bucket(1.0),
+		Options.Bucket(20.0),
+		Options.Bucket(30.0),
+		Options.Bucket(50.0),
+		Options.Bucket(100.0),
+		Options.Bucket(300.0),
+		Options.Bucket(500.0),
 		Options.Label("histogram_key1", "histogram_value1"),
 	)
 

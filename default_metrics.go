@@ -68,12 +68,12 @@ type simpleHistogram struct {
 	name        string
 	description string
 	labels      string
-	buckets     []float64
+	buckets     map[float64]uint64
 	value       *int64
 }
 
 func NewHistogram(name string, options ...option) Histogram {
-	config := configuration{Name: name}
+	config := configuration{Name: name, Buckets: make(map[float64]uint64)}
 	Options.apply(options...)(&config)
 	var value int64
 	return simpleHistogram{
@@ -84,14 +84,21 @@ func NewHistogram(name string, options ...option) Histogram {
 		value:       &value,
 	}
 }
-func (this simpleHistogram) Type() string            { return "histogram" }
-func (this simpleHistogram) Name() string            { return this.name }
-func (this simpleHistogram) Description() string     { return this.description }
-func (this simpleHistogram) Labels() string          { return this.labels }
-func (this simpleHistogram) Buckets() []float64       { return this.buckets }
-func (this simpleHistogram) Value() int64            { return atomic.LoadInt64(this.value) }
-func (this simpleHistogram) Increment()              { atomic.AddInt64(this.value, 1) } // Satisfy Interface
-func (this simpleHistogram) Observe(value uint64)    { atomic.AddInt64(this.value, int64(value)) }
+func (this simpleHistogram) Type() string                { return "histogram" }
+func (this simpleHistogram) Name() string                { return this.name }
+func (this simpleHistogram) Description() string         { return this.description }
+func (this simpleHistogram) Labels() string              { return this.labels }
+func (this simpleHistogram) Buckets() map[float64]uint64 { return this.buckets }
+func (this simpleHistogram) Value() int64                { return atomic.LoadInt64(this.value) }
+func (this simpleHistogram) Increment()                  { atomic.AddInt64(this.value, 1) } // Satisfy Interface
+func (this simpleHistogram) Observe(value uint64) {
+	for bucket, count := range this.buckets {
+		if float64(value) <= bucket {
+			this.buckets[bucket] = count + 1
+		}
+	}
+	//	atomic.AddInt64(this.value, int64(value))
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var Options singleton
@@ -102,7 +109,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Buckets		[]float64
+	Buckets     map[float64]uint64
 }
 
 func (singleton) Description(value string) option {
@@ -112,7 +119,7 @@ func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
 func (singleton) Bucket(value float64) option {
-	return func(this *configuration) { this.Buckets = append(this.Buckets, value) }
+	return func(this *configuration) { this.Buckets[value] = 0 }
 }
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {

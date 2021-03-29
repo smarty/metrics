@@ -25,7 +25,7 @@ type Gauge interface {
 
 type Histogram interface {
 	Metric
-	Buckets() []float64
+	Buckets() map[float64]uint64
 	Observe(uint64)
 }
 

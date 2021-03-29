@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"sort"
 )
 
 type defaultExporter struct {
@@ -23,9 +24,18 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 		_, _ = fmt.Fprintf(response, outputFormatHelp, item.Name(), item.Description())
 		_, _ = fmt.Fprintf(response, outputFormatType, item.Name(), item.Type())
 		if item.Type() == "histogram" {
-			for _, bucket := range item.(Histogram).Buckets() {
-				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), bucket, item.Value())
+			buckets := item.(Histogram).Buckets()
+			keys := make([]float64, 0)
+			for label := range buckets {
+				keys = append(keys, label)
 			}
+			sort.Float64s(keys)
+			for _, label := range keys {
+				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), label, buckets[label])
+			}
+			//for _, kbucket, count := range item.(Histogram).Buckets() {
+			//	_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), bucket, count)
+			//}
 		} else {
 			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
 		}
@@ -35,4 +45,4 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 const outputFormatHelp = "\n# HELP %s %s\n"
 const outputFormatType = "# TYPE %s %s\n"
 const outputFormatLabels = "%s%s %d\n"
-const outputFormatBuckets = "%s{le=\"%6.3f\"} %d\n"
+const outputFormatBuckets = "%s{le=\"%5.3f\"} %d\n"
