@@ -33,9 +33,8 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 			for _, label := range keys {
 				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), label, buckets[label])
 			}
-			//for _, kbucket, count := range item.(Histogram).Buckets() {
-			//	_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), bucket, count)
-			//}
+			fmt.Fprintf(response, "%s_count %d\n", item.Name(), item.(Histogram).Count())
+			fmt.Fprintf(response, "%s_sum %f", item.Name(), item.(Histogram).Sum())
 		} else {
 			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
 		}
