@@ -16,6 +16,9 @@ func TestMetricsValues(t *testing.T) {
 	metrics.gauge1.IncrementN(2)
 	metrics.gauge2.Measure(4)
 	metrics.histogram1.Observe(6)
+	//for x := 0; x < 10; x++ {
+	//	go metrics.histogram1.Observe(6)
+	//}
 
 	assertEqual(t, int64(1), metrics.counter1.Value())
 	assertEqual(t, int64(2), metrics.counter2.Value())
@@ -24,6 +27,8 @@ func TestMetricsValues(t *testing.T) {
 	assertEqual(t, uint64(0), metrics.histogram1.Buckets()[1.000])
 	assertEqual(t, uint64(1), metrics.histogram1.Buckets()[20.000])
 	assertEqual(t, uint64(1), metrics.histogram1.Buckets()[30.000])
+	//assertEqual(t, uint64(10), metrics.histogram1.Buckets()[20.000])
+	//assertEqual(t, uint64(10), metrics.histogram1.Buckets()[30.000])
 
 }
 
@@ -81,7 +86,7 @@ my_histogram_with_buckets{le="100.000"} 1
 my_histogram_with_buckets{le="300.000"} 1
 my_histogram_with_buckets{le="500.000"} 1
 my_histogram_with_buckets_count 1
-my_histogram_with_buckets_sum 6
+my_histogram_with_buckets_sum 66.000000
 `)
 
 type TestMetrics struct {

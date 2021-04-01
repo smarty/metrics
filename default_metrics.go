@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -65,6 +66,7 @@ func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type simpleHistogram struct {
+	mutex       *sync.Mutex
 	name        string
 	description string
 	labels      string
@@ -95,19 +97,20 @@ func (this simpleHistogram) Name() string                { return this.name }
 func (this simpleHistogram) Description() string         { return this.description }
 func (this simpleHistogram) Labels() string              { return this.labels }
 func (this simpleHistogram) Buckets() map[float64]uint64 { return this.buckets }
-func (this simpleHistogram) Count() uint64               { return this.count }
-func (this simpleHistogram) Sum() float64                { return this.sum }
+func (this simpleHistogram) Count() *uint64              { return this.count }
+func (this simpleHistogram) Sum() *float64               { return this.sum }
 func (this simpleHistogram) Value() int64                { return atomic.LoadInt64(this.value) }
 func (this simpleHistogram) Increment()                  { atomic.AddInt64(this.value, 1) } // Satisfy Interface
 func (this simpleHistogram) Observe(value float64) {
+	//this.mutex.Lock()
 	for bucket, count := range this.buckets {
 		if float64(value) <= bucket {
 			this.buckets[bucket] = count + 1
 		}
 	}
-	this.sum += value
-	this.count += 1
-	//	atomic.AddInt64(this.value, int64(value))
+	*this.sum += value
+	*this.count += 1
+	//this.mutex.Unlock()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
