@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -15,21 +16,32 @@ func TestMetricsValues(t *testing.T) {
 	metrics.gauge1.Increment()
 	metrics.gauge1.IncrementN(2)
 	metrics.gauge2.Measure(4)
-	metrics.histogram1.Observe(6)
-	//for x := 0; x < 10; x++ {
-	//	go metrics.histogram1.Observe(6)
-	//}
 
 	assertEqual(t, int64(1), metrics.counter1.Value())
 	assertEqual(t, int64(2), metrics.counter2.Value())
 	assertEqual(t, int64(3), metrics.gauge1.Value())
 	assertEqual(t, int64(4), metrics.gauge2.Value())
-	assertEqual(t, uint64(0), metrics.histogram1.Buckets()[1.000])
-	assertEqual(t, uint64(1), metrics.histogram1.Buckets()[20.000])
-	assertEqual(t, uint64(1), metrics.histogram1.Buckets()[30.000])
-	//assertEqual(t, uint64(10), metrics.histogram1.Buckets()[20.000])
-	//assertEqual(t, uint64(10), metrics.histogram1.Buckets()[30.000])
 
+	wg := sync.WaitGroup{}
+	for x := 1.1; x < 1000; x = x * 2 {
+		wg.Add(1)
+		go func(observation float64) {
+			metrics.histogram1.Observe(observation)
+			wg.Done()
+		}(x)
+	}
+	wg.Wait()
+
+	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[0.000])
+	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[1.000])
+	assertEqual(t, uint64(5), *metrics.histogram1.Buckets()[20.000])
+	assertEqual(t, uint64(5), *metrics.histogram1.Buckets()[30.000])
+	assertEqual(t, uint64(6), *metrics.histogram1.Buckets()[50.000])
+	assertEqual(t, uint64(7), *metrics.histogram1.Buckets()[100.000])
+	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[300.000])
+	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[500.000])
+	assertEqual(t, uint64(10), *metrics.histogram1.Count())
+	assertEqual(t, float64(1125.3000000000002), *metrics.histogram1.Sum())
 }
 
 func TestMetricsRendering(t *testing.T) {
@@ -90,10 +102,10 @@ my_histogram_with_buckets_sum 66.000000
 `)
 
 type TestMetrics struct {
-	counter1 Counter
-	counter2 Counter
-	gauge1   Gauge
-	gauge2   Gauge
+	counter1   Counter
+	counter2   Counter
+	gauge1     Gauge
+	gauge2     Gauge
 	histogram1 Histogram
 }
 
@@ -126,10 +138,10 @@ func NewTestMetrics() *TestMetrics {
 	)
 
 	return &TestMetrics{
-		counter1: counter1,
-		counter2: counter2,
-		gauge1:   gauge1,
-		gauge2:   gauge2,
+		counter1:   counter1,
+		counter2:   counter2,
+		gauge1:     gauge1,
+		gauge2:     gauge2,
 		histogram1: histogram1,
 	}
 }

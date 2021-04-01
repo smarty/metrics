@@ -66,18 +66,17 @@ func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type simpleHistogram struct {
-	mutex       *sync.Mutex
 	name        string
 	description string
 	labels      string
-	buckets     map[float64]uint64
+	buckets     map[float64]*uint64
 	value       *int64
 	sum         *float64
 	count       *uint64
 }
 
 func NewHistogram(name string, options ...option) Histogram {
-	config := configuration{Name: name, Buckets: make(map[float64]uint64)}
+	config := configuration{Name: name, Buckets: make(map[float64]*uint64)}
 	Options.apply(options...)(&config)
 	var value int64
 	var sum float64
@@ -92,25 +91,25 @@ func NewHistogram(name string, options ...option) Histogram {
 		count:       &count,
 	}
 }
-func (this simpleHistogram) Type() string                { return "histogram" }
-func (this simpleHistogram) Name() string                { return this.name }
-func (this simpleHistogram) Description() string         { return this.description }
-func (this simpleHistogram) Labels() string              { return this.labels }
-func (this simpleHistogram) Buckets() map[float64]uint64 { return this.buckets }
-func (this simpleHistogram) Count() *uint64              { return this.count }
-func (this simpleHistogram) Sum() *float64               { return this.sum }
-func (this simpleHistogram) Value() int64                { return atomic.LoadInt64(this.value) }
-func (this simpleHistogram) Increment()                  { atomic.AddInt64(this.value, 1) } // Satisfy Interface
+func (this simpleHistogram) Type() string                 { return "histogram" }
+func (this simpleHistogram) Name() string                 { return this.name }
+func (this simpleHistogram) Description() string          { return this.description }
+func (this simpleHistogram) Labels() string               { return this.labels }
+func (this simpleHistogram) Buckets() map[float64]*uint64 { return this.buckets }
+func (this simpleHistogram) Count() *uint64               { return this.count }
+func (this simpleHistogram) Sum() *float64                { return this.sum }
+func (this simpleHistogram) Value() int64                 { return atomic.LoadInt64(this.value) }
+func (this simpleHistogram) Increment()                   { atomic.AddInt64(this.value, 1) } // Satisfy Interface
 func (this simpleHistogram) Observe(value float64) {
-	//this.mutex.Lock()
-	for bucket, count := range this.buckets {
-		if float64(value) <= bucket {
-			this.buckets[bucket] = count + 1
+	for bucket, _ := range this.buckets {
+		if value <= bucket {
+			//this.mutex.Lock()
+			atomic.AddUint64(this.buckets[bucket], 1)
+			//this.mutex.Unlock()
 		}
 	}
 	*this.sum += value
 	*this.count += 1
-	//this.mutex.Unlock()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,10 +118,11 @@ var Options singleton
 type singleton struct{}
 type option func(*configuration)
 type configuration struct {
+	mutex       sync.Mutex
 	Name        string
 	Description string
 	Labels      map[string]string
-	Buckets     map[float64]uint64
+	Buckets     map[float64]*uint64
 }
 
 func (singleton) Description(value string) option {
@@ -132,7 +132,7 @@ func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
 func (singleton) Bucket(value float64) option {
-	return func(this *configuration) { this.Buckets[value] = 0 }
+	return func(this *configuration) { this.Buckets[value] = new(uint64) } // atomic.StoreUint64(this.Buckets[value], 0)
 }
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {
