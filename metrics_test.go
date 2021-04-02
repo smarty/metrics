@@ -22,15 +22,7 @@ func TestMetricsValues(t *testing.T) {
 	assertEqual(t, int64(3), metrics.gauge1.Value())
 	assertEqual(t, int64(4), metrics.gauge2.Value())
 
-	wg := sync.WaitGroup{}
-	for x := 1.1; x < 1000; x = x * 2 {
-		wg.Add(1)
-		go func(observation float64) {
-			metrics.histogram1.Observe(observation)
-			wg.Done()
-		}(x)
-	}
-	wg.Wait()
+	measureHistogram(metrics)
 
 	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[0.000])
 	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[1.000])
@@ -44,6 +36,18 @@ func TestMetricsValues(t *testing.T) {
 	assertEqual(t, float64(1125.3000000000002), *metrics.histogram1.Sum())
 }
 
+func measureHistogram(metrics *TestMetrics) {
+	wg := sync.WaitGroup{}
+	for x := 1.1; x < 1000; x = x * 2 {
+		wg.Add(1)
+		go func(observation float64) {
+			metrics.histogram1.Observe(observation)
+			wg.Done()
+		}(x)
+	}
+	wg.Wait()
+}
+
 func TestMetricsRendering(t *testing.T) {
 	metrics := NewTestMetrics()
 
@@ -51,7 +55,8 @@ func TestMetricsRendering(t *testing.T) {
 	metrics.counter2.IncrementN(2)
 	metrics.gauge1.IncrementN(3)
 	metrics.gauge2.Measure(4)
-	metrics.histogram1.Observe(66)
+
+	measureHistogram(metrics)
 
 	exporter := NewExporter()
 	exporter.Add(
@@ -91,14 +96,14 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 # TYPE my_histogram_with_buckets histogram
 my_histogram_with_buckets{le="0.000"} 0
 my_histogram_with_buckets{le="1.000"} 0
-my_histogram_with_buckets{le="20.000"} 0
-my_histogram_with_buckets{le="30.000"} 0
-my_histogram_with_buckets{le="50.000"} 0
-my_histogram_with_buckets{le="100.000"} 1
-my_histogram_with_buckets{le="300.000"} 1
-my_histogram_with_buckets{le="500.000"} 1
-my_histogram_with_buckets_count 1
-my_histogram_with_buckets_sum 66.000000
+my_histogram_with_buckets{le="20.000"} 5
+my_histogram_with_buckets{le="30.000"} 5
+my_histogram_with_buckets{le="50.000"} 6
+my_histogram_with_buckets{le="100.000"} 7
+my_histogram_with_buckets{le="300.000"} 9
+my_histogram_with_buckets{le="500.000"} 9
+my_histogram_with_buckets_count 10
+my_histogram_with_buckets_sum 1125.300000
 `)
 
 type TestMetrics struct {
