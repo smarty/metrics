@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"math"
 	"net/http/httptest"
 	"reflect"
 	"strings"
@@ -33,7 +34,7 @@ func TestMetricsValues(t *testing.T) {
 	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[300.000])
 	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[500.000])
 	assertEqual(t, uint64(10), *metrics.histogram1.Count())
-	assertEqual(t, float64(1125.3000000000002), *metrics.histogram1.Sum())
+	assertEqual(t, math.Round(1125.3000000000002), math.Round(*metrics.histogram1.Sum()))
 }
 
 func measureHistogram(metrics *TestMetrics) {
