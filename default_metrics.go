@@ -65,6 +65,8 @@ func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+var mutex sync.Mutex
+
 type simpleHistogram struct {
 	name        string
 	description string
@@ -108,8 +110,10 @@ func (this simpleHistogram) Observe(value float64) {
 			//this.mutex.Unlock()
 		}
 	}
+	mutex.Lock()
 	*this.sum += value
-	*this.count += 1
+	mutex.Unlock()
+	atomic.AddUint64(this.count, 1)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
