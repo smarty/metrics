@@ -105,9 +105,7 @@ func (this simpleHistogram) Increment()                   { atomic.AddInt64(this
 func (this simpleHistogram) Observe(value float64) {
 	for bucket, _ := range this.buckets {
 		if value <= bucket {
-			//this.mutex.Lock()
 			atomic.AddUint64(this.buckets[bucket], 1)
-			//this.mutex.Unlock()
 		}
 	}
 	mutex.Lock()
@@ -136,7 +134,7 @@ func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
 func (singleton) Bucket(value float64) option {
-	return func(this *configuration) { this.Buckets[value] = new(uint64) } // atomic.StoreUint64(this.Buckets[value], 0)
+	return func(this *configuration) { this.Buckets[value] = new(uint64) }
 }
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {
