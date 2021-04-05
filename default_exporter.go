@@ -44,4 +44,4 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 const outputFormatHelp = "\n# HELP %s %s\n"
 const outputFormatType = "# TYPE %s %s\n"
 const outputFormatLabels = "%s%s %d\n"
-const outputFormatBuckets = "%s{le=\"%5.3f\"} %d\n"
+const outputFormatBuckets = "%s_bucket{le=\"%5.3f\"} %d\n"

@@ -95,14 +95,14 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_buckets histogram description
 # TYPE my_histogram_with_buckets histogram
-my_histogram_with_buckets{le="0.000"} 0
-my_histogram_with_buckets{le="1.000"} 0
-my_histogram_with_buckets{le="20.000"} 5
-my_histogram_with_buckets{le="30.000"} 5
-my_histogram_with_buckets{le="50.000"} 6
-my_histogram_with_buckets{le="100.000"} 7
-my_histogram_with_buckets{le="300.000"} 9
-my_histogram_with_buckets{le="500.000"} 9
+my_histogram_with_buckets_bucket{le="0.000"} 0
+my_histogram_with_buckets_bucket{le="1.000"} 0
+my_histogram_with_buckets_bucket{le="20.000"} 5
+my_histogram_with_buckets_bucket{le="30.000"} 5
+my_histogram_with_buckets_bucket{le="50.000"} 6
+my_histogram_with_buckets_bucket{le="100.000"} 7
+my_histogram_with_buckets_bucket{le="300.000"} 9
+my_histogram_with_buckets_bucket{le="500.000"} 9
 my_histogram_with_buckets_count 10
 my_histogram_with_buckets_sum 1125.300000
 `)
