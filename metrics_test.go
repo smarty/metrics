@@ -103,6 +103,7 @@ my_histogram_with_buckets_bucket{le="50.000"} 6
 my_histogram_with_buckets_bucket{le="100.000"} 7
 my_histogram_with_buckets_bucket{le="300.000"} 9
 my_histogram_with_buckets_bucket{le="500.000"} 9
+my_histogram_with_buckets_bucket{le="+Inf"} 10
 my_histogram_with_buckets_count 10
 my_histogram_with_buckets_sum 1125.300000
 `)

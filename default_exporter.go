@@ -33,6 +33,8 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 			for _, label := range keys {
 				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), label, *buckets[label]) // TODO: Accept multiple label key-pairs
 			}
+			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count." https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
+			fmt.Fprintf(response, "%s_bucket{le=\"+Inf\"} %d\n", item.Name(), *item.(Histogram).Count())
 			fmt.Fprintf(response, "%s_count %d\n", item.Name(), *item.(Histogram).Count())
 			fmt.Fprintf(response, "%s_sum %f", item.Name(), *item.(Histogram).Sum())
 		} else {
