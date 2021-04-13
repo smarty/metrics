@@ -72,7 +72,6 @@ type simpleHistogram struct {
 	description string
 	labels      string
 	buckets     []bucket
-	value       *int64
 	sum         *float64
 	count       *uint64
 }
@@ -80,7 +79,6 @@ type simpleHistogram struct {
 func NewHistogram(name string, options ...option) Histogram {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
-	var value int64
 	var sum float64
 	var count uint64
 	return simpleHistogram{
@@ -88,7 +86,6 @@ func NewHistogram(name string, options ...option) Histogram {
 		description: config.Description,
 		labels:      config.RenderLabels(),
 		buckets:     config.Buckets,
-		value:       &value,
 		sum:         &sum,
 		count:       &count,
 	}
@@ -100,8 +97,8 @@ func (this simpleHistogram) Labels() string      { return this.labels }
 func (this simpleHistogram) Buckets() []bucket   { return this.buckets }
 func (this simpleHistogram) Count() *uint64      { return this.count }
 func (this simpleHistogram) Sum() *float64       { return this.sum }
-func (this simpleHistogram) Value() int64        { return atomic.LoadInt64(this.value) }
-func (this simpleHistogram) Increment()          { atomic.AddInt64(this.value, 1) } // Satisfy Interface
+func (this simpleHistogram) Value() int64        { return 0 }
+func (this simpleHistogram) Increment()          {}
 func (this simpleHistogram) Observe(value float64) {
 	for x, bucket := range this.buckets {
 		if value <= bucket.key {
