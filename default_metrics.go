@@ -120,12 +120,12 @@ type bucket struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 var Options singleton
 
 type singleton struct{}
 type option func(*configuration)
 type configuration struct {
-	mutex       sync.Mutex
 	Name        string
 	Description string
 	Labels      map[string]string
