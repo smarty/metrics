@@ -23,26 +23,56 @@ func TestMetricsValues(t *testing.T) {
 	assertEqual(t, int64(3), metrics.gauge1.Value())
 	assertEqual(t, int64(4), metrics.gauge2.Value())
 
-	measureHistogram(metrics)
+	measureHistograms(metrics)
 
-	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[0.000])
-	assertEqual(t, uint64(0), *metrics.histogram1.Buckets()[1.000])
-	assertEqual(t, uint64(5), *metrics.histogram1.Buckets()[20.000])
-	assertEqual(t, uint64(5), *metrics.histogram1.Buckets()[30.000])
-	assertEqual(t, uint64(6), *metrics.histogram1.Buckets()[50.000])
-	assertEqual(t, uint64(7), *metrics.histogram1.Buckets()[100.000])
-	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[300.000])
-	assertEqual(t, uint64(9), *metrics.histogram1.Buckets()[500.000])
+	testBuckets1 := []bucket{
+		{key: 0.000, value: uint64pointer(0)},
+		{key: 1.000, value: uint64pointer(0)},
+		{key: 20.000, value: uint64pointer(5)},
+		{key: 30.000, value: uint64pointer(5)},
+		{key: 50.000, value: uint64pointer(6)},
+		{key: 100.000, value: uint64pointer(7)},
+		{key: 300.000, value: uint64pointer(9)},
+		{key: 500.000, value: uint64pointer(9)},
+	}
+	for x, liveBucket := range metrics.histogram1.Buckets() {
+		assertEqual(t, testBuckets1[x].key, liveBucket.key)
+		assertEqual(t, *testBuckets1[x].value, *liveBucket.value)
+	}
 	assertEqual(t, uint64(10), *metrics.histogram1.Count())
 	assertEqual(t, math.Round(1125.3000000000002), math.Round(*metrics.histogram1.Sum()))
+
+	testBuckets2 := []bucket{
+		{key: 0.000, value: uint64pointer(0)},
+		{key: 1.000, value: uint64pointer(1)},
+		{key: 20.000, value: uint64pointer(4)},
+		{key: 30.000, value: uint64pointer(4)},
+		{key: 50.000, value: uint64pointer(5)},
+		{key: 100.000, value: uint64pointer(5)},
+		{key: 300.000, value: uint64pointer(6)},
+		{key: 500.000, value: uint64pointer(7)},
+	}
+	for x, liveBucket := range metrics.histogram2.Buckets() {
+		assertEqual(t, testBuckets2[x].key, liveBucket.key)
+		assertEqual(t, *testBuckets2[x].value, *liveBucket.value)
+	}
+	assertEqual(t, uint64(7), *metrics.histogram2.Count())
+	assertEqual(t, math.Round(547), math.Round(*metrics.histogram2.Sum()))
 }
 
-func measureHistogram(metrics *TestMetrics) {
+func measureHistograms(metrics *TestMetrics) {
 	wg := sync.WaitGroup{}
 	for x := 1.1; x < 1000; x = x * 2 {
 		wg.Add(1)
 		go func(observation float64) {
 			metrics.histogram1.Observe(observation)
+			wg.Done()
+		}(x)
+	}
+	for x := 0.5; x < 1000; x = x * 3 {
+		wg.Add(1)
+		go func(observation float64) {
+			metrics.histogram2.Observe(observation)
 			wg.Done()
 		}(x)
 	}
@@ -57,7 +87,7 @@ func TestMetricsRendering(t *testing.T) {
 	metrics.gauge1.IncrementN(3)
 	metrics.gauge2.Measure(4)
 
-	measureHistogram(metrics)
+	measureHistograms(metrics)
 
 	exporter := NewExporter()
 	exporter.Add(
@@ -66,6 +96,7 @@ func TestMetricsRendering(t *testing.T) {
 		metrics.gauge1,
 		metrics.gauge2,
 		metrics.histogram1,
+		metrics.histogram2,
 	)
 	recorder := httptest.NewRecorder()
 
@@ -95,17 +126,31 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_buckets histogram description
 # TYPE my_histogram_with_buckets histogram
-my_histogram_with_buckets_bucket{le="0.000"} 0
-my_histogram_with_buckets_bucket{le="1.000"} 0
-my_histogram_with_buckets_bucket{le="20.000"} 5
-my_histogram_with_buckets_bucket{le="30.000"} 5
-my_histogram_with_buckets_bucket{le="50.000"} 6
-my_histogram_with_buckets_bucket{le="100.000"} 7
-my_histogram_with_buckets_bucket{le="300.000"} 9
-my_histogram_with_buckets_bucket{le="500.000"} 9
-my_histogram_with_buckets_bucket{le="+Inf"} 10
+my_histogram_with_buckets_bucket{ le="0.000" } 0
+my_histogram_with_buckets_bucket{ le="1.000" } 0
+my_histogram_with_buckets_bucket{ le="20.000" } 5
+my_histogram_with_buckets_bucket{ le="30.000" } 5
+my_histogram_with_buckets_bucket{ le="50.000" } 6
+my_histogram_with_buckets_bucket{ le="100.000" } 7
+my_histogram_with_buckets_bucket{ le="300.000" } 9
+my_histogram_with_buckets_bucket{ le="500.000" } 9
+my_histogram_with_buckets_bucket{ le="+Inf" } 10
 my_histogram_with_buckets_count 10
 my_histogram_with_buckets_sum 1125.300000
+
+# HELP my_histogram_with_buckets_and_labels histogram description
+# TYPE my_histogram_with_buckets_and_labels histogram
+my_histogram_with_buckets_and_labels_bucket{ le="0.000", histogram_key1="histogram_value1" } 0
+my_histogram_with_buckets_and_labels_bucket{ le="1.000", histogram_key1="histogram_value1" } 1
+my_histogram_with_buckets_and_labels_bucket{ le="20.000", histogram_key1="histogram_value1" } 4
+my_histogram_with_buckets_and_labels_bucket{ le="30.000", histogram_key1="histogram_value1" } 4
+my_histogram_with_buckets_and_labels_bucket{ le="50.000", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_and_labels_bucket{ le="100.000", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_and_labels_bucket{ le="300.000", histogram_key1="histogram_value1" } 6
+my_histogram_with_buckets_and_labels_bucket{ le="500.000", histogram_key1="histogram_value1" } 7
+my_histogram_with_buckets_and_labels_bucket{ le="+Inf", histogram_key1="histogram_value1" } 7
+my_histogram_with_buckets_and_labels_count{ histogram_key1="histogram_value1" } 7
+my_histogram_with_buckets_and_labels_sum{ histogram_key1="histogram_value1" } 546.500000
 `)
 
 type TestMetrics struct {
@@ -114,6 +159,7 @@ type TestMetrics struct {
 	gauge1     Gauge
 	gauge2     Gauge
 	histogram1 Histogram
+	histogram2 Histogram
 }
 
 func NewTestMetrics() *TestMetrics {
@@ -141,6 +187,17 @@ func NewTestMetrics() *TestMetrics {
 		Options.Bucket(100.0),
 		Options.Bucket(300.0),
 		Options.Bucket(500.0),
+	)
+	histogram2 := NewHistogram("my_histogram_with_buckets_and_labels",
+		Options.Description("histogram description"),
+		Options.Bucket(0.0),
+		Options.Bucket(1.0),
+		Options.Bucket(20.0),
+		Options.Bucket(30.0),
+		Options.Bucket(50.0),
+		Options.Bucket(100.0),
+		Options.Bucket(300.0),
+		Options.Bucket(500.0),
 		Options.Label("histogram_key1", "histogram_value1"),
 	)
 
@@ -150,6 +207,7 @@ func NewTestMetrics() *TestMetrics {
 		gauge1:     gauge1,
 		gauge2:     gauge2,
 		histogram1: histogram1,
+		histogram2: histogram2,
 	}
 }
 
@@ -164,4 +222,8 @@ func assertEqual(t *testing.T, expected, actual interface{}) {
 		expected,
 		actual,
 	)
+}
+
+func uint64pointer(x uint64) *uint64 {
+	return &x
 }

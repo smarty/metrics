@@ -3,7 +3,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
-	"sort"
+	"strings"
 )
 
 type defaultExporter struct {
@@ -25,20 +25,18 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 		_, _ = fmt.Fprintf(response, outputFormatType, item.Name(), item.Type())
 		if item.Type() == "histogram" {
 			buckets := item.(Histogram).Buckets()
-			keys := make([]float64, 0)
-			for label := range buckets {
-				keys = append(keys, label)
+			for _, bucket := range buckets {
+				_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name()+"_bucket",
+					formatBucketLabels(bucket.key, item.Labels()), *bucket.value)
 			}
-			sort.Float64s(keys)
-			for _, label := range keys {
-				_, _ = fmt.Fprintf(response, outputFormatBuckets, item.Name(), label, *buckets[label]) // TODO: Accept multiple label key-pairs
-			}
-			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count." https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
-			fmt.Fprintf(response, "%s_bucket{le=\"+Inf\"} %d\n", item.Name(), *item.(Histogram).Count())
-			fmt.Fprintf(response, "%s_count %d\n", item.Name(), *item.(Histogram).Count())
-			fmt.Fprintf(response, "%s_sum %f", item.Name(), *item.(Histogram).Sum())
+			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count."
+			// https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
+			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name()+"_bucket",
+				formatBucketLabels(-1, item.Labels()), *item.(Histogram).Count())
+			_, _ = fmt.Fprintf(response, "%s_count%s %d\n", item.Name(), item.Labels(), *item.(Histogram).Count())
+			_, _ = fmt.Fprintf(response, "%s_sum%s %f\n", item.Name(), item.Labels(), *item.(Histogram).Sum())
 		} else {
-			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name(), item.Labels(), item.Value()) // TODO: Accept multiple label key-pairs
+			_, _ = fmt.Fprintf(response, outputFormatLabels, item.Name(), item.Labels(), item.Value())
 		}
 	}
 }
@@ -46,4 +44,16 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 const outputFormatHelp = "\n# HELP %s %s\n"
 const outputFormatType = "# TYPE %s %s\n"
 const outputFormatLabels = "%s%s %d\n"
-const outputFormatBuckets = "%s_bucket{le=\"%5.3f\"} %d\n"
+
+func formatBucketLabels(bucket float64, labels string) string {
+	var bucketString string
+	if bucket == -1 {
+		bucketString = `{ le="+Inf"`
+	} else {
+		bucketString = fmt.Sprintf(`{ le="%5.3f"`, bucket)
+	}
+	if labels == "" {
+		return fmt.Sprintf(`%s }`, bucketString)
+	}
+	return fmt.Sprintf("%s, %s", bucketString, strings.Replace(labels, "{ ", "", 1))
+}
