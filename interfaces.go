@@ -9,16 +9,17 @@ type Metric interface {
 	Labels() string
 
 	Value() int64
-	Increment()
 }
 
 type Counter interface {
 	Metric
+	Increment()
 	IncrementN(uint64)
 }
 
 type Gauge interface {
 	Metric
+	Increment()
 	IncrementN(int64)
 	Measure(int64)
 }

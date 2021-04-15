@@ -99,7 +99,6 @@ func (this simpleHistogram) Count() uint64       { return atomic.LoadUint64(this
 func (this simpleHistogram) Sum() uint64         { return atomic.LoadUint64(this.sum) }
 
 func (this simpleHistogram) Value() int64 { return 0 }
-func (this simpleHistogram) Increment()   {}
 
 func (this simpleHistogram) Measure(value uint64) {
 	for index, bucketKey := range this.bucketKeys {
