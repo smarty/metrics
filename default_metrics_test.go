@@ -24,61 +24,38 @@ func TestMetricsValues(t *testing.T) {
 
 	measureHistograms(metrics)
 
-	testBucketKeys1 := []uint64{
-		0,
-		1,
-		20,
-		30,
-		50,
-		100,
-		300,
-		500,
+	testBuckets1 := []Bucket{
+		{key: 0, value: 0},
+		{key: 1, value: 0},
+		{key: 20, value: 5},
+		{key: 30, value: 5},
+		{key: 50, value: 6},
+		{key: 100, value: 7},
+		{key: 300, value: 9},
+		{key: 500, value: 9},
 	}
 
-	testBucketValues1 := []uint64{
-		0,
-		0,
-		5,
-		5,
-		6,
-		7,
-		9,
-		9,
-	}
-
-	liveBucketValues := metrics.histogram1.Values()
-	for index, liveBucketKey := range metrics.histogram1.Buckets() {
-		assertEqual(t, testBucketKeys1[index], liveBucketKey)
-		assertEqual(t, testBucketValues1[index], liveBucketValues[index])
+	for index, liveBucket := range metrics.histogram1.Buckets() {
+		assertEqual(t, testBuckets1[index].Key(), liveBucket.Key())
+		assertEqual(t, testBuckets1[index].Value(), liveBucket.Value())
 	}
 	assertEqual(t, 10, metrics.histogram1.Count())
 	assertEqual(t, 1125, metrics.histogram1.Sum())
 
-	testBucketKeys2 := []uint64{
-		0,
-		1,
-		20,
-		30,
-		50,
-		100,
-		300,
-		500,
-	}
-	testBucketValues2 := []uint64{
-		0,
-		1,
-		4,
-		4,
-		5,
-		5,
-		6,
-		7,
+	testBuckets2 := []Bucket{
+		{key: 0, value: 0},
+		{key: 1, value: 1},
+		{key: 20, value: 4},
+		{key: 30, value: 4},
+		{key: 50, value: 5},
+		{key: 100, value: 5},
+		{key: 300, value: 6},
+		{key: 500, value: 7},
 	}
 
-	liveBucketValues = metrics.histogram2.Values()
-	for index, liveBucketKey := range metrics.histogram2.Buckets() {
-		assertEqual(t, testBucketKeys2[index], liveBucketKey)
-		assertEqual(t, testBucketValues2[index], liveBucketValues[index])
+	for index, liveBucket := range metrics.histogram2.Buckets() {
+		assertEqual(t, testBuckets2[index].Key(), liveBucket.Key())
+		assertEqual(t, testBuckets2[index].Value(), liveBucket.Value())
 	}
 	assertEqual(t, 7, metrics.histogram2.Count())
 	assertEqual(t, 547, metrics.histogram2.Sum())
@@ -161,7 +138,7 @@ my_histogram_with_buckets_bucket{ le="300" } 9
 my_histogram_with_buckets_bucket{ le="500" } 9
 my_histogram_with_buckets_bucket{ le="+Inf" } 10
 my_histogram_with_buckets_count 10
-my_histogram_with_buckets_sum 1125
+my_histogram_with_buckets_sum 1023
 
 # HELP my_histogram_with_buckets_and_labels histogram description
 # TYPE my_histogram_with_buckets_and_labels histogram
@@ -204,25 +181,25 @@ func NewTestMetrics() *TestMetrics {
 	)
 	histogram1 := NewHistogram("my_histogram_with_buckets",
 		Options.Description("histogram description"),
-		Options.Bucket(0.0),
-		Options.Bucket(1.0),
-		Options.Bucket(20.0),
-		Options.Bucket(30.0),
-		Options.Bucket(50.0),
-		Options.Bucket(100.0),
-		Options.Bucket(300.0),
-		Options.Bucket(500.0),
+		Options.Bucket(0),
+		Options.Bucket(1),
+		Options.Bucket(20),
+		Options.Bucket(30),
+		Options.Bucket(50),
+		Options.Bucket(100),
+		Options.Bucket(300),
+		Options.Bucket(500),
 	)
 	histogram2 := NewHistogram("my_histogram_with_buckets_and_labels",
 		Options.Description("histogram description"),
-		Options.Bucket(0.0),
-		Options.Bucket(1.0),
-		Options.Bucket(20.0),
-		Options.Bucket(30.0),
-		Options.Bucket(50.0),
-		Options.Bucket(100.0),
-		Options.Bucket(300.0),
-		Options.Bucket(500.0),
+		Options.Bucket(0),
+		Options.Bucket(1),
+		Options.Bucket(20),
+		Options.Bucket(30),
+		Options.Bucket(50),
+		Options.Bucket(100),
+		Options.Bucket(300),
+		Options.Bucket(500),
 		Options.Label("histogram_key1", "histogram_value1"),
 	)
 
