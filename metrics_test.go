@@ -24,36 +24,61 @@ func TestMetricsValues(t *testing.T) {
 
 	measureHistograms(metrics)
 
-	testBuckets1 := []Bucket{
-		{key: 0, value: 0},
-		{key: 1, value: 0},
-		{key: 20, value: 5},
-		{key: 30, value: 5},
-		{key: 50, value: 6},
-		{key: 100, value: 7},
-		{key: 300, value: 9},
-		{key: 500, value: 9},
+	testBucketKeys1 := []uint64{
+		0,
+		1,
+		20,
+		30,
+		50,
+		100,
+		300,
+		500,
 	}
-	for x, liveBucket := range metrics.histogram1.Buckets() {
-		assertEqual(t, testBuckets1[x].key, liveBucket.key)
-		assertEqual(t, testBuckets1[x].value, liveBucket.value)
+
+	testBucketValues1 := []uint64{
+		0,
+		0,
+		5,
+		5,
+		6,
+		7,
+		9,
+		9,
+	}
+
+	liveBucketValues := metrics.histogram1.Values()
+	for index, liveBucketKey := range metrics.histogram1.Buckets() {
+		assertEqual(t, testBucketKeys1[index], liveBucketKey)
+		assertEqual(t, testBucketValues1[index], liveBucketValues[index])
 	}
 	assertEqual(t, 10, metrics.histogram1.Count())
 	assertEqual(t, 1125, metrics.histogram1.Sum())
 
-	testBuckets2 := []Bucket{
-		{key: 0, value: 0},
-		{key: 1, value: 1},
-		{key: 20, value: 4},
-		{key: 30, value: 4},
-		{key: 50, value: 5},
-		{key: 100, value: 5},
-		{key: 300, value: 6},
-		{key: 500, value: 7},
+	testBucketKeys2 := []uint64{
+		0,
+		1,
+		20,
+		30,
+		50,
+		100,
+		300,
+		500,
 	}
-	for x, liveBucket := range metrics.histogram2.Buckets() {
-		assertEqual(t, testBuckets2[x].key, liveBucket.key)
-		assertEqual(t, testBuckets2[x].value, liveBucket.value)
+	testBucketValues2 := []uint64{
+		0,
+		1,
+		4,
+		4,
+		5,
+		5,
+		6,
+		7,
+	}
+
+	liveBucketValues = metrics.histogram2.Values()
+	for index, liveBucketKey := range metrics.histogram2.Buckets() {
+		assertEqual(t, testBucketKeys2[index], liveBucketKey)
+		assertEqual(t, testBucketValues2[index], liveBucketValues[index])
 	}
 	assertEqual(t, 7, metrics.histogram2.Count())
 	assertEqual(t, 547, metrics.histogram2.Sum())
@@ -126,31 +151,31 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_buckets histogram description
 # TYPE my_histogram_with_buckets histogram
-my_histogram_with_buckets_bucket{ le="0.000" } 0
-my_histogram_with_buckets_bucket{ le="1.000" } 0
-my_histogram_with_buckets_bucket{ le="20.000" } 5
-my_histogram_with_buckets_bucket{ le="30.000" } 5
-my_histogram_with_buckets_bucket{ le="50.000" } 6
-my_histogram_with_buckets_bucket{ le="100.000" } 7
-my_histogram_with_buckets_bucket{ le="300.000" } 9
-my_histogram_with_buckets_bucket{ le="500.000" } 9
+my_histogram_with_buckets_bucket{ le="0" } 0
+my_histogram_with_buckets_bucket{ le="1" } 0
+my_histogram_with_buckets_bucket{ le="20" } 5
+my_histogram_with_buckets_bucket{ le="30" } 5
+my_histogram_with_buckets_bucket{ le="50" } 6
+my_histogram_with_buckets_bucket{ le="100" } 7
+my_histogram_with_buckets_bucket{ le="300" } 9
+my_histogram_with_buckets_bucket{ le="500" } 9
 my_histogram_with_buckets_bucket{ le="+Inf" } 10
 my_histogram_with_buckets_count 10
-my_histogram_with_buckets_sum 1125.300000
+my_histogram_with_buckets_sum 1125
 
 # HELP my_histogram_with_buckets_and_labels histogram description
 # TYPE my_histogram_with_buckets_and_labels histogram
-my_histogram_with_buckets_and_labels_bucket{ le="0.000", histogram_key1="histogram_value1" } 0
-my_histogram_with_buckets_and_labels_bucket{ le="1.000", histogram_key1="histogram_value1" } 1
-my_histogram_with_buckets_and_labels_bucket{ le="20.000", histogram_key1="histogram_value1" } 4
-my_histogram_with_buckets_and_labels_bucket{ le="30.000", histogram_key1="histogram_value1" } 4
-my_histogram_with_buckets_and_labels_bucket{ le="50.000", histogram_key1="histogram_value1" } 5
-my_histogram_with_buckets_and_labels_bucket{ le="100.000", histogram_key1="histogram_value1" } 5
-my_histogram_with_buckets_and_labels_bucket{ le="300.000", histogram_key1="histogram_value1" } 6
-my_histogram_with_buckets_and_labels_bucket{ le="500.000", histogram_key1="histogram_value1" } 7
+my_histogram_with_buckets_and_labels_bucket{ le="0", histogram_key1="histogram_value1" } 0
+my_histogram_with_buckets_and_labels_bucket{ le="1", histogram_key1="histogram_value1" } 1
+my_histogram_with_buckets_and_labels_bucket{ le="20", histogram_key1="histogram_value1" } 4
+my_histogram_with_buckets_and_labels_bucket{ le="30", histogram_key1="histogram_value1" } 4
+my_histogram_with_buckets_and_labels_bucket{ le="50", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_and_labels_bucket{ le="100", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_and_labels_bucket{ le="300", histogram_key1="histogram_value1" } 6
+my_histogram_with_buckets_and_labels_bucket{ le="500", histogram_key1="histogram_value1" } 7
 my_histogram_with_buckets_and_labels_bucket{ le="+Inf", histogram_key1="histogram_value1" } 7
 my_histogram_with_buckets_and_labels_count{ histogram_key1="histogram_value1" } 7
-my_histogram_with_buckets_and_labels_sum{ histogram_key1="histogram_value1" } 546.500000
+my_histogram_with_buckets_and_labels_sum{ histogram_key1="histogram_value1" } 546
 `)
 
 type TestMetrics struct {

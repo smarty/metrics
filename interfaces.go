@@ -26,8 +26,8 @@ type Gauge interface {
 type Histogram interface {
 	Metric
 	Measure(uint64)
-
-	Buckets() []Bucket
+	Buckets() []uint64
+	Values() []uint64
 	Count() uint64
 	Sum() uint64
 }

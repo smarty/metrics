@@ -29,9 +29,11 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 		if !ok {
 			_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name(), metric.Labels(), metric.Value())
 		} else {
-			for _, bucket := range histogram.Buckets() {
+			bucketKeys := histogram.Buckets()
+			bucketValues := histogram.Values()
+			for index, bucketKey := range bucketKeys {
 				_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name()+"_bucket",
-					formatBucketLabels(bucket.key, metric.Labels()), bucket.value)
+					formatBucketLabels(bucketKey, metric.Labels()), bucketValues[index])
 			}
 			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count."
 			// https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
