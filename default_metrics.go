@@ -99,20 +99,22 @@ func (this simpleHistogram) Count() *uint64      { return this.count }
 func (this simpleHistogram) Sum() *float64       { return this.sum }
 func (this simpleHistogram) Value() int64        { return 0 }
 func (this simpleHistogram) Increment()          {}
-func (this simpleHistogram) Observe(value float64) {
+func (this simpleHistogram) Observe(value float64) { // TODO: why a float?
 	for x, bucket := range this.buckets {
 		if value <= bucket.key {
 			atomic.AddUint64(this.buckets[x].value, 1)
 		}
+		// else break out of for loop
 	}
-	mutex.Lock()
-	*this.sum += value
+
+	mutex.Lock()       // BAD: global lock
+	*this.sum += value // NOTE: if value was a uint64, we could do an atomic add
 	mutex.Unlock()
-	atomic.AddUint64(this.count, 1)
+	atomic.AddUint64(this.count, 1) // not sure on this but maybe we use the smallest bucket value instead of the count?
 }
 
 type bucket struct {
-	key   float64
+	key   float64 // TODO: figure out how to make this a uint64
 	value *uint64
 }
 
