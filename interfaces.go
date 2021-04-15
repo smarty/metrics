@@ -9,7 +9,7 @@ type Metric interface {
 	Labels() string
 
 	Keys() []int64
-	Value(index int64) int64
+	Value(key int64) int64
 }
 
 type Counter interface {

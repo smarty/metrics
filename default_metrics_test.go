@@ -9,8 +9,8 @@ import (
 )
 
 func TestMetricsValues(t *testing.T) {
-	histogramBuckets := []int64{0, 1, 20, 30, 50, 100, 300, 500}
-	sample := newSampleMetrics(histogramBuckets)
+	histogramBucketKeys := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	sample := newSampleMetrics(histogramBucketKeys)
 
 	sample.counter1.Increment()
 	sample.counter2.IncrementN(2)
@@ -27,16 +27,16 @@ func TestMetricsValues(t *testing.T) {
 
 	expectedHistogramValues1 := []int64{0, 1, 5, 5, 6, 7, 9, 9}
 	for index, key := range sample.histogram1.Keys() {
-		assertEqual(t, histogramBuckets[index], key)
-		assertEqual(t, expectedHistogramValues1[index], sample.histogram1.Value(int64(index)))
+		assertEqual(t, histogramBucketKeys[index], key)
+		assertEqual(t, expectedHistogramValues1[index], sample.histogram1.Value(key))
 	}
 	assertEqual(t, int64(10), sample.histogram1.Count())
 	assertEqual(t, int64(1023), sample.histogram1.Sum())
 
 	expectedHistogramValues2 := []int64{0, 1, 3, 4, 4, 5, 6, 6}
 	for index, key := range sample.histogram2.Keys() {
-		assertEqual(t, histogramBuckets[index], key)
-		assertEqual(t, expectedHistogramValues2[index], sample.histogram2.Value(int64(index)))
+		assertEqual(t, histogramBucketKeys[index], key)
+		assertEqual(t, expectedHistogramValues2[index], sample.histogram2.Value(key))
 	}
 	assertEqual(t, int64(7), sample.histogram2.Count())
 	assertEqual(t, int64(1093), sample.histogram2.Sum())
@@ -102,8 +102,8 @@ func measureHistograms(metrics *sampleMetrics) {
 }
 
 func TestMetricsRendering(t *testing.T) {
-	histogramBuckets := []int64{0, 1, 20, 30, 50, 100, 300, 500}
-	metrics := newSampleMetrics(histogramBuckets)
+	histogramBucketKeys := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	metrics := newSampleMetrics(histogramBucketKeys)
 
 	metrics.counter1.IncrementN(1)
 	metrics.counter2.IncrementN(2)

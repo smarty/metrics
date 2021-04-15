@@ -30,18 +30,19 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 		if !ok {
 			_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name(), metric.Labels(), metric.Value(0))
 		} else {
-			for index, key := range histogram.Keys() {
-				_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name()+"_bucket",
-					formatBucketLabels(key, metric.Labels()), histogram.Value(int64(index)))
+			metricBucketName := histogram.Name() + "_bucket"
+
+			for _, key := range histogram.Keys() {
+				_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatBucketLabels(key, histogram.Labels()), histogram.Value(key))
 			}
+
 			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count."
 			// https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
-			_, _ = fmt.Fprintf(response, outputFormatLabels,
-				metric.Name()+"_bucket",
-				formatBucketLabels(math.MaxInt64, metric.Labels()), metric.(Histogram).Count())
+			_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatBucketLabels(math.MaxInt64, histogram.Labels()), histogram.(Histogram).Count())
 
-			_, _ = fmt.Fprintf(response, "%s_count%s %d\n", metric.Name(), metric.Labels(), histogram.Count())
-			_, _ = fmt.Fprintf(response, "%s_sum%s %d\n", metric.Name(), metric.Labels(), histogram.Sum())
+			_, _ = fmt.Fprintf(response, outputFormatHistogramSum,
+				histogram.Name(), histogram.Labels(), histogram.Count(),
+				histogram.Name(), histogram.Labels(), histogram.Sum())
 		}
 	}
 }
@@ -53,14 +54,17 @@ func formatBucketLabels(bucket int64, labels string) string {
 	} else {
 		bucketString = fmt.Sprintf(`{ le="%d"`, bucket)
 	}
-	if labels == "" {
+
+	if len(labels) == 0 {
 		return fmt.Sprintf(`%s }`, bucketString)
 	}
+
 	return fmt.Sprintf("%s, %s", bucketString, strings.Replace(labels, "{ ", "", 1))
 }
 
 const (
-	outputFormatHelp   = "\n# HELP %s %s\n"
-	outputFormatType   = "# TYPE %s %s\n"
-	outputFormatLabels = "%s%s %d\n"
+	outputFormatHelp         = "\n# HELP %s %s\n"
+	outputFormatType         = "# TYPE %s %s\n"
+	outputFormatLabels       = "%s%s %d\n"
+	outputFormatHistogramSum = "%s_count%s %d\n%s_sum%s %d\n"
 )
