@@ -99,6 +99,8 @@ func (this simpleHistogram) Count() *uint64      { return this.count }
 func (this simpleHistogram) Sum() *float64       { return this.sum }
 func (this simpleHistogram) Value() int64        { return 0 }
 func (this simpleHistogram) Increment()          {}
+
+// TODO: rename Measure(value uint64)?
 func (this simpleHistogram) Observe(value float64) { // TODO: why a float?
 	for x, bucket := range this.buckets {
 		if value <= bucket.key {
