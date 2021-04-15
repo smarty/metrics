@@ -25,10 +25,11 @@ type Gauge interface {
 
 type Histogram interface {
 	Metric
-	Buckets() []bucket
-	Count() *uint64
-	Sum() *float64
-	Observe(float64)
+	Measure(uint64)
+
+	Buckets() []Bucket
+	Count() uint64
+	Sum() uint64
 }
 
 type Exporter interface {

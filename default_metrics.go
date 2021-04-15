@@ -3,7 +3,6 @@ package metrics
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"sync/atomic"
 )
 
@@ -65,21 +64,19 @@ func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var mutex sync.Mutex
-
 type simpleHistogram struct {
 	name        string
 	description string
 	labels      string
-	buckets     []bucket
-	sum         *float64
+	buckets     []Bucket
+	sum         *uint64
 	count       *uint64
 }
 
 func NewHistogram(name string, options ...option) Histogram {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
-	var sum float64
+	var sum uint64
 	var count uint64
 	return simpleHistogram{
 		name:        config.Name,
@@ -94,30 +91,27 @@ func (this simpleHistogram) Type() string        { return "histogram" }
 func (this simpleHistogram) Name() string        { return this.name }
 func (this simpleHistogram) Description() string { return this.description }
 func (this simpleHistogram) Labels() string      { return this.labels }
-func (this simpleHistogram) Buckets() []bucket   { return this.buckets }
-func (this simpleHistogram) Count() *uint64      { return this.count }
-func (this simpleHistogram) Sum() *float64       { return this.sum }
-func (this simpleHistogram) Value() int64        { return 0 }
-func (this simpleHistogram) Increment()          {}
+func (this simpleHistogram) Buckets() []Bucket   { return this.buckets }
+func (this simpleHistogram) Count() uint64       { return atomic.LoadUint64(this.count) }
+func (this simpleHistogram) Sum() uint64         { return atomic.LoadUint64(this.sum) }
 
-// TODO: rename Measure(value uint64)?
-func (this simpleHistogram) Observe(value float64) { // TODO: why a float?
-	for x, bucket := range this.buckets {
+func (this simpleHistogram) Value() int64 { return 0 }
+func (this simpleHistogram) Increment()   {}
+
+func (this simpleHistogram) Measure(value uint64) {
+	for index, bucket := range this.buckets {
 		if value <= bucket.key {
-			atomic.AddUint64(this.buckets[x].value, 1)
+			atomic.AddUint64(&this.buckets[index].value, 1)
 		}
-		// else break out of for loop
 	}
 
-	mutex.Lock()       // BAD: global lock
-	*this.sum += value // NOTE: if value was a uint64, we could do an atomic add
-	mutex.Unlock()
-	atomic.AddUint64(this.count, 1) // not sure on this but maybe we use the smallest bucket value instead of the count?
+	atomic.AddUint64(this.sum, value)
+	atomic.AddUint64(this.count, 1)
 }
 
-type bucket struct {
-	key   float64 // TODO: figure out how to make this a uint64
-	value *uint64
+type Bucket struct {
+	key   uint64
+	value uint64
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +124,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Buckets     []bucket
+	Buckets     []Bucket
 }
 
 func (singleton) Description(value string) option {
@@ -139,9 +133,9 @@ func (singleton) Description(value string) option {
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
-func (singleton) Bucket(value float64) option {
+func (singleton) Bucket(value uint64) option {
 	return func(this *configuration) {
-		this.Buckets = append(this.Buckets, bucket{key: value, value: new(uint64)})
+		this.Buckets = append(this.Buckets, Bucket{key: value})
 	}
 }
 func (singleton) apply(options ...option) option {

@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"math"
 	"net/http/httptest"
 	"reflect"
 	"strings"
@@ -25,58 +24,59 @@ func TestMetricsValues(t *testing.T) {
 
 	measureHistograms(metrics)
 
-	testBuckets1 := []bucket{
-		{key: 0.000, value: uint64pointer(0)},
-		{key: 1.000, value: uint64pointer(0)},
-		{key: 20.000, value: uint64pointer(5)},
-		{key: 30.000, value: uint64pointer(5)},
-		{key: 50.000, value: uint64pointer(6)},
-		{key: 100.000, value: uint64pointer(7)},
-		{key: 300.000, value: uint64pointer(9)},
-		{key: 500.000, value: uint64pointer(9)},
+	testBuckets1 := []Bucket{
+		{key: 0, value: 0},
+		{key: 1, value: 0},
+		{key: 20, value: 5},
+		{key: 30, value: 5},
+		{key: 50, value: 6},
+		{key: 100, value: 7},
+		{key: 300, value: 9},
+		{key: 500, value: 9},
 	}
 	for x, liveBucket := range metrics.histogram1.Buckets() {
 		assertEqual(t, testBuckets1[x].key, liveBucket.key)
-		assertEqual(t, *testBuckets1[x].value, *liveBucket.value)
+		assertEqual(t, testBuckets1[x].value, liveBucket.value)
 	}
-	assertEqual(t, uint64(10), *metrics.histogram1.Count())
-	assertEqual(t, math.Round(1125.3000000000002), math.Round(*metrics.histogram1.Sum()))
+	assertEqual(t, 10, metrics.histogram1.Count())
+	assertEqual(t, 1125, metrics.histogram1.Sum())
 
-	testBuckets2 := []bucket{
-		{key: 0.000, value: uint64pointer(0)},
-		{key: 1.000, value: uint64pointer(1)},
-		{key: 20.000, value: uint64pointer(4)},
-		{key: 30.000, value: uint64pointer(4)},
-		{key: 50.000, value: uint64pointer(5)},
-		{key: 100.000, value: uint64pointer(5)},
-		{key: 300.000, value: uint64pointer(6)},
-		{key: 500.000, value: uint64pointer(7)},
+	testBuckets2 := []Bucket{
+		{key: 0, value: 0},
+		{key: 1, value: 1},
+		{key: 20, value: 4},
+		{key: 30, value: 4},
+		{key: 50, value: 5},
+		{key: 100, value: 5},
+		{key: 300, value: 6},
+		{key: 500, value: 7},
 	}
 	for x, liveBucket := range metrics.histogram2.Buckets() {
 		assertEqual(t, testBuckets2[x].key, liveBucket.key)
-		assertEqual(t, *testBuckets2[x].value, *liveBucket.value)
+		assertEqual(t, testBuckets2[x].value, liveBucket.value)
 	}
-	assertEqual(t, uint64(7), *metrics.histogram2.Count())
-	assertEqual(t, math.Round(547), math.Round(*metrics.histogram2.Sum()))
+	assertEqual(t, 7, metrics.histogram2.Count())
+	assertEqual(t, 547, metrics.histogram2.Sum())
 }
 
 func measureHistograms(metrics *TestMetrics) {
 	wg := sync.WaitGroup{}
-	for x := 1.1; x < 1000; x = x * 2 {
+	defer wg.Wait()
+
+	for x := uint64(1); x < 1000; x = x * 2 {
 		wg.Add(1)
-		go func(observation float64) {
-			metrics.histogram1.Observe(observation)
+		go func(measurement uint64) {
+			metrics.histogram1.Measure(measurement)
 			wg.Done()
 		}(x)
 	}
-	for x := 0.5; x < 1000; x = x * 3 {
+	for x := uint64(1); x < 1000; x = x * 3 {
 		wg.Add(1)
-		go func(observation float64) {
-			metrics.histogram2.Observe(observation)
+		go func(measurement uint64) {
+			metrics.histogram2.Measure(measurement)
 			wg.Done()
 		}(x)
 	}
-	wg.Wait()
 }
 
 func TestMetricsRendering(t *testing.T) {
@@ -222,8 +222,4 @@ func assertEqual(t *testing.T, expected, actual interface{}) {
 		expected,
 		actual,
 	)
-}
-
-func uint64pointer(x uint64) *uint64 {
-	return &x
 }
