@@ -7,9 +7,6 @@ type Metric interface {
 	Name() string
 	Description() string
 	Labels() string
-
-	Keys() []int64
-	Value(key int64) int64
 }
 
 type Counter interface {
@@ -17,6 +14,8 @@ type Counter interface {
 
 	Increment()
 	IncrementN(uint64)
+
+	Value() uint64
 }
 
 type Gauge interface {
@@ -25,14 +24,19 @@ type Gauge interface {
 	Increment()
 	IncrementN(int64)
 	Measure(int64)
+
+	Value() int64
 }
 
 type Histogram interface {
 	Metric
 
-	Measure(int64)
-	Count() int64
-	Sum() int64
+	Measure(uint64)
+	Count() uint64
+	Sum() uint64
+
+	Buckets() []uint64
+	Value(bucket uint64) uint64
 }
 
 type Exporter interface {

@@ -13,7 +13,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Keys        []int64
+	Buckets     []uint64
 }
 
 func (singleton) Description(value string) option {
@@ -22,9 +22,9 @@ func (singleton) Description(value string) option {
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
-func (singleton) Bucket(value int64) option {
+func (singleton) Bucket(value uint64) option {
 	return func(this *configuration) {
-		this.Keys = append(this.Keys, value)
+		this.Buckets = append(this.Buckets, value)
 	}
 }
 

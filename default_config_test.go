@@ -9,7 +9,7 @@ import (
 )
 
 func TestMetricsValues(t *testing.T) {
-	histogramBucketKeys := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	histogramBucketKeys := []uint64{0, 1, 20, 30, 50, 100, 300, 500}
 	sample := newSampleMetrics(histogramBucketKeys)
 
 	sample.counter1.Increment()
@@ -18,30 +18,30 @@ func TestMetricsValues(t *testing.T) {
 	sample.gauge1.IncrementN(2)
 	sample.gauge2.Measure(4)
 
-	assertEqual(t, int64(1), sample.counter1.Value(0))
-	assertEqual(t, int64(2), sample.counter2.Value(0))
-	assertEqual(t, int64(3), sample.gauge1.Value(0))
-	assertEqual(t, int64(4), sample.gauge2.Value(0))
+	assertEqual(t, uint64(1), sample.counter1.Value())
+	assertEqual(t, uint64(2), sample.counter2.Value())
+	assertEqual(t, int64(3), sample.gauge1.Value())
+	assertEqual(t, int64(4), sample.gauge2.Value())
 
 	measureHistograms(sample)
 
-	expectedHistogramValues1 := []int64{0, 1, 5, 5, 6, 7, 9, 9}
-	for index, key := range sample.histogram1.Keys() {
+	expectedHistogramValues1 := []uint64{0, 1, 5, 5, 6, 7, 9, 9}
+	for index, key := range sample.histogram1.Buckets() {
 		assertEqual(t, histogramBucketKeys[index], key)
 		assertEqual(t, expectedHistogramValues1[index], sample.histogram1.Value(key))
 	}
-	assertEqual(t, int64(10), sample.histogram1.Count())
-	assertEqual(t, int64(1023), sample.histogram1.Sum())
+	assertEqual(t, uint64(10), sample.histogram1.Count())
+	assertEqual(t, uint64(1023), sample.histogram1.Sum())
 
-	expectedHistogramValues2 := []int64{0, 1, 3, 4, 4, 5, 6, 6}
-	for index, key := range sample.histogram2.Keys() {
+	expectedHistogramValues2 := []uint64{0, 1, 3, 4, 4, 5, 6, 6}
+	for index, key := range sample.histogram2.Buckets() {
 		assertEqual(t, histogramBucketKeys[index], key)
 		assertEqual(t, expectedHistogramValues2[index], sample.histogram2.Value(key))
 	}
-	assertEqual(t, int64(7), sample.histogram2.Count())
-	assertEqual(t, int64(1093), sample.histogram2.Sum())
+	assertEqual(t, uint64(7), sample.histogram2.Count())
+	assertEqual(t, uint64(1093), sample.histogram2.Sum())
 }
-func newSampleMetrics(bucketKeys []int64) *sampleMetrics {
+func newSampleMetrics(bucketKeys []uint64) *sampleMetrics {
 	histogramOptions := []option{
 		Options.Description("histogram description"),
 		Options.Label("histogram_key1", "histogram_value1"),
@@ -85,16 +85,16 @@ func measureHistograms(metrics *sampleMetrics) {
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 
-	for x := int64(1); x < 1000; x = x * 2 {
+	for x := uint64(1); x < 1000; x = x * 2 {
 		wg.Add(1)
-		go func(measurement int64) {
+		go func(measurement uint64) {
 			metrics.histogram1.Measure(measurement)
 			wg.Done()
 		}(x)
 	}
-	for x := int64(1); x < 1000; x = x * 3 {
+	for x := uint64(1); x < 1000; x = x * 3 {
 		wg.Add(1)
-		go func(measurement int64) {
+		go func(measurement uint64) {
 			metrics.histogram2.Measure(measurement)
 			wg.Done()
 		}(x)
@@ -102,7 +102,7 @@ func measureHistograms(metrics *sampleMetrics) {
 }
 
 func TestMetricsRendering(t *testing.T) {
-	histogramBucketKeys := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	histogramBucketKeys := []uint64{0, 1, 20, 30, 50, 100, 300, 500}
 	metrics := newSampleMetrics(histogramBucketKeys)
 
 	metrics.counter1.IncrementN(1)
