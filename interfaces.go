@@ -1,9 +1,6 @@
 package metrics
 
-import (
-	"net/http"
-	"sync/atomic"
-)
+import "net/http"
 
 type Metric interface {
 	Type() string
@@ -11,17 +8,20 @@ type Metric interface {
 	Description() string
 	Labels() string
 
-	Value() int64
+	Keys() []int64
+	Value(index int64) int64
 }
 
 type Counter interface {
 	Metric
+
 	Increment()
 	IncrementN(uint64)
 }
 
 type Gauge interface {
 	Metric
+
 	Increment()
 	IncrementN(int64)
 	Measure(int64)
@@ -29,16 +29,11 @@ type Gauge interface {
 
 type Histogram interface {
 	Metric
-	Measure(uint64)
-	Buckets() []Bucket
-	Count() uint64
-	Sum() uint64
+
+	Measure(int64)
+	Count() int64
+	Sum() int64
 }
-
-type Bucket struct{ key, value uint64 }
-
-func (this Bucket) Key() uint64   { return this.key }
-func (this Bucket) Value() uint64 { return atomic.LoadUint64(&this.value) }
 
 type Exporter interface {
 	http.Handler

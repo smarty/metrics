@@ -24,13 +24,19 @@ func NewCounter(name string, options ...option) Counter {
 		value:       &value,
 	}
 }
-func (this simpleCounter) Type() string            { return "counter" }
-func (this simpleCounter) Name() string            { return this.name }
-func (this simpleCounter) Description() string     { return this.description }
-func (this simpleCounter) Labels() string          { return this.labels }
-func (this simpleCounter) Value() int64            { return atomic.LoadInt64(this.value) }
+
+func (this simpleCounter) Type() string        { return "counter" }
+func (this simpleCounter) Name() string        { return this.name }
+func (this simpleCounter) Description() string { return this.description }
+func (this simpleCounter) Labels() string      { return this.labels }
+
+func (this simpleCounter) Keys() []int64       { return defaultKeys }
+func (this simpleCounter) Value(_ int64) int64 { return atomic.LoadInt64(this.value) }
+
 func (this simpleCounter) Increment()              { atomic.AddInt64(this.value, 1) }
 func (this simpleCounter) IncrementN(value uint64) { atomic.AddInt64(this.value, int64(value)) }
+
+var defaultKeys = []int64{0}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,11 +59,14 @@ func NewGauge(name string, options ...option) Gauge {
 	}
 }
 
-func (this simpleGauge) Type() string           { return "gauge" }
-func (this simpleGauge) Name() string           { return this.name }
-func (this simpleGauge) Description() string    { return this.description }
-func (this simpleGauge) Labels() string         { return this.labels }
-func (this simpleGauge) Value() int64           { return atomic.LoadInt64(this.value) }
+func (this simpleGauge) Type() string        { return "gauge" }
+func (this simpleGauge) Name() string        { return this.name }
+func (this simpleGauge) Description() string { return this.description }
+func (this simpleGauge) Labels() string      { return this.labels }
+
+func (this simpleGauge) Keys() []int64       { return defaultKeys }
+func (this simpleGauge) Value(_ int64) int64 { return atomic.LoadInt64(this.value) }
+
 func (this simpleGauge) Increment()             { atomic.AddInt64(this.value, 1) }
 func (this simpleGauge) IncrementN(value int64) { atomic.AddInt64(this.value, value) }
 func (this simpleGauge) Measure(value int64)    { atomic.StoreInt64(this.value, value) }
@@ -68,45 +77,51 @@ type simpleHistogram struct {
 	name        string
 	description string
 	labels      string
-	buckets     []Bucket
-	sum         *uint64
-	count       *uint64
+	keys        []int64
+	values      []int64
+	sum         *int64
+	count       *int64
 }
 
 func NewHistogram(name string, options ...option) Histogram {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
-	var sum uint64
-	var count uint64
+	var sum int64
+	var count int64
+
 	return simpleHistogram{
 		name:        config.Name,
 		description: config.Description,
 		labels:      config.RenderLabels(),
-		buckets:     config.Buckets,
+		keys:        config.Keys,
+		values:      make([]int64, len(config.Keys)),
 		sum:         &sum,
 		count:       &count,
 	}
 }
+
 func (this simpleHistogram) Type() string        { return "histogram" }
 func (this simpleHistogram) Name() string        { return this.name }
 func (this simpleHistogram) Description() string { return this.description }
 func (this simpleHistogram) Labels() string      { return this.labels }
-func (this simpleHistogram) Buckets() []Bucket   { return this.buckets }
-func (this simpleHistogram) Count() uint64       { return atomic.LoadUint64(this.count) }
-func (this simpleHistogram) Sum() uint64         { return atomic.LoadUint64(this.sum) }
 
-func (this simpleHistogram) Value() int64 { return 0 }
+func (this simpleHistogram) Keys() []int64 { return this.keys }
+func (this simpleHistogram) Value(index int64) int64 {
+	return int64(atomic.LoadInt64(&this.values[index]))
+}
 
-func (this simpleHistogram) Measure(value uint64) {
-	for index, bucket := range this.buckets {
-		if value <= bucket.key {
-			atomic.AddUint64(&this.buckets[index].value, 1)
+func (this simpleHistogram) Measure(value int64) {
+	for index, key := range this.keys {
+		if value <= key {
+			atomic.AddInt64(&this.values[index], 1)
 		}
 	}
 
-	atomic.AddUint64(this.sum, value)
-	atomic.AddUint64(this.count, 1)
+	atomic.AddInt64(this.sum, value)
+	atomic.AddInt64(this.count, 1)
 }
+func (this simpleHistogram) Count() int64 { return atomic.LoadInt64(this.count) }
+func (this simpleHistogram) Sum() int64   { return atomic.LoadInt64(this.sum) }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -118,7 +133,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
-	Buckets     []Bucket
+	Keys        []int64
 }
 
 func (singleton) Description(value string) option {
@@ -127,9 +142,9 @@ func (singleton) Description(value string) option {
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
 }
-func (singleton) Bucket(value uint64) option {
+func (singleton) Bucket(value int64) option {
 	return func(this *configuration) {
-		this.Buckets = append(this.Buckets, Bucket{key: value})
+		this.Keys = append(this.Keys, value)
 	}
 }
 func (singleton) apply(options ...option) option {

@@ -9,72 +9,92 @@ import (
 )
 
 func TestMetricsValues(t *testing.T) {
-	metrics := NewTestMetrics()
+	histogramBuckets := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	sample := newSampleMetrics(histogramBuckets)
 
-	metrics.counter1.Increment()
-	metrics.counter2.IncrementN(2)
-	metrics.gauge1.Increment()
-	metrics.gauge1.IncrementN(2)
-	metrics.gauge2.Measure(4)
+	sample.counter1.Increment()
+	sample.counter2.IncrementN(2)
+	sample.gauge1.Increment()
+	sample.gauge1.IncrementN(2)
+	sample.gauge2.Measure(4)
 
-	assertEqual(t, int64(1), metrics.counter1.Value())
-	assertEqual(t, int64(2), metrics.counter2.Value())
-	assertEqual(t, int64(3), metrics.gauge1.Value())
-	assertEqual(t, int64(4), metrics.gauge2.Value())
+	assertEqual(t, int64(1), sample.counter1.Value(0))
+	assertEqual(t, int64(2), sample.counter2.Value(0))
+	assertEqual(t, int64(3), sample.gauge1.Value(0))
+	assertEqual(t, int64(4), sample.gauge2.Value(0))
 
-	measureHistograms(metrics)
+	measureHistograms(sample)
 
-	testBuckets1 := []Bucket{
-		{key: 0, value: 0},
-		{key: 1, value: 1},
-		{key: 20, value: 5},
-		{key: 30, value: 5},
-		{key: 50, value: 6},
-		{key: 100, value: 7},
-		{key: 300, value: 9},
-		{key: 500, value: 9},
+	expectedHistogramValues1 := []int64{0, 1, 5, 5, 6, 7, 9, 9}
+	for index, key := range sample.histogram1.Keys() {
+		assertEqual(t, histogramBuckets[index], key)
+		assertEqual(t, expectedHistogramValues1[index], sample.histogram1.Value(int64(index)))
 	}
+	assertEqual(t, int64(10), sample.histogram1.Count())
+	assertEqual(t, int64(1023), sample.histogram1.Sum())
 
-	for index, liveBucket := range metrics.histogram1.Buckets() {
-		assertEqual(t, testBuckets1[index].Key(), liveBucket.Key())
-		assertEqual(t, testBuckets1[index].Value(), liveBucket.Value())
+	expectedHistogramValues2 := []int64{0, 1, 3, 4, 4, 5, 6, 6}
+	for index, key := range sample.histogram2.Keys() {
+		assertEqual(t, histogramBuckets[index], key)
+		assertEqual(t, expectedHistogramValues2[index], sample.histogram2.Value(int64(index)))
 	}
-	assertEqual(t, uint64(10), metrics.histogram1.Count())
-	assertEqual(t, uint64(1023), metrics.histogram1.Sum())
-
-	testBuckets2 := []Bucket{
-		{key: 0, value: 0},
-		{key: 1, value: 1},
-		{key: 20, value: 3},
-		{key: 30, value: 4},
-		{key: 50, value: 4},
-		{key: 100, value: 5},
-		{key: 300, value: 6},
-		{key: 500, value: 6},
-	}
-
-	for index, liveBucket := range metrics.histogram2.Buckets() {
-		assertEqual(t, testBuckets2[index].Key(), liveBucket.Key())
-		assertEqual(t, testBuckets2[index].Value(), liveBucket.Value())
-	}
-	assertEqual(t, uint64(7), metrics.histogram2.Count())
-	assertEqual(t, uint64(1093), metrics.histogram2.Sum())
+	assertEqual(t, int64(7), sample.histogram2.Count())
+	assertEqual(t, int64(1093), sample.histogram2.Sum())
 }
+func newSampleMetrics(bucketKeys []int64) *sampleMetrics {
+	histogramOptions := []option{
+		Options.Description("histogram description"),
+		Options.Label("histogram_key1", "histogram_value1"),
+	}
+	for _, bucket := range bucketKeys {
+		histogramOptions = append(histogramOptions, Options.Bucket(bucket))
+	}
 
-func measureHistograms(metrics *TestMetrics) {
+	return &sampleMetrics{
+		counter1: NewCounter("my_counter",
+			Options.Description("counter description"),
+		),
+		counter2: NewCounter("my_counter_with_labels",
+			Options.Description("counter description"),
+			Options.Label("counter_label_key", "counter_label_value"),
+		),
+		gauge1: NewGauge("my_gauge",
+			Options.Description("gauge description"),
+		),
+		gauge2: NewGauge("my_gauge_with_labels",
+			Options.Description("gauge description"),
+			Options.Label("gauge_label_key", "gauge_label_value"),
+		),
+		histogram1: NewHistogram("my_histogram_with_buckets", histogramOptions...),
+		histogram2: NewHistogram("my_histogram_with_buckets_and_labels", histogramOptions...),
+	}
+}
+func assertEqual(t *testing.T, expected, actual interface{}) {
+	if reflect.DeepEqual(expected, actual) {
+		return
+	}
+	t.Helper()
+	t.Errorf("\n"+
+		"Expected: [%v]\n"+
+		"Actual:   [%v]",
+		expected,
+		actual,
+	)
+}
+func measureHistograms(metrics *sampleMetrics) {
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 
-	for x := uint64(1); x < 1000; x = x * 2 {
+	for x := int64(1); x < 1000; x = x * 2 {
 		wg.Add(1)
-		go func(measurement uint64) {
+		go func(measurement int64) {
 			metrics.histogram1.Measure(measurement)
 			wg.Done()
 		}(x)
 	}
-	for x := uint64(1); x < 1000; x = x * 3 {
+	for x := int64(1); x < 1000; x = x * 3 {
 		wg.Add(1)
-		go func(measurement uint64) {
+		go func(measurement int64) {
 			metrics.histogram2.Measure(measurement)
 			wg.Done()
 		}(x)
@@ -82,7 +102,8 @@ func measureHistograms(metrics *TestMetrics) {
 }
 
 func TestMetricsRendering(t *testing.T) {
-	metrics := NewTestMetrics()
+	histogramBuckets := []int64{0, 1, 20, 30, 50, 100, 300, 500}
+	metrics := newSampleMetrics(histogramBuckets)
 
 	metrics.counter1.IncrementN(1)
 	metrics.counter2.IncrementN(2)
@@ -104,12 +125,11 @@ func TestMetricsRendering(t *testing.T) {
 
 	exporter.ServeHTTP(recorder, nil)
 
-	actualBody := strings.TrimSpace(recorder.Body.String())
-
-	assertEqual(t, expectedExporterBody, actualBody)
+	actualBody := recorder.Body.String()
+	assertEqual(t, strings.TrimSpace(expectedExporterBody), strings.TrimSpace(actualBody))
 }
 
-var expectedExporterBody = strings.TrimSpace(`
+const expectedExporterBody = `
 # HELP my_counter counter description
 # TYPE my_counter counter
 my_counter 1
@@ -128,17 +148,17 @@ my_gauge_with_labels{ gauge_label_key="gauge_label_value" } 4
 
 # HELP my_histogram_with_buckets histogram description
 # TYPE my_histogram_with_buckets histogram
-my_histogram_with_buckets_bucket{ le="0" } 0
-my_histogram_with_buckets_bucket{ le="1" } 1
-my_histogram_with_buckets_bucket{ le="20" } 5
-my_histogram_with_buckets_bucket{ le="30" } 5
-my_histogram_with_buckets_bucket{ le="50" } 6
-my_histogram_with_buckets_bucket{ le="100" } 7
-my_histogram_with_buckets_bucket{ le="300" } 9
-my_histogram_with_buckets_bucket{ le="500" } 9
-my_histogram_with_buckets_bucket{ le="+Inf" } 10
-my_histogram_with_buckets_count 10
-my_histogram_with_buckets_sum 1023
+my_histogram_with_buckets_bucket{ le="0", histogram_key1="histogram_value1" } 0
+my_histogram_with_buckets_bucket{ le="1", histogram_key1="histogram_value1" } 1
+my_histogram_with_buckets_bucket{ le="20", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_bucket{ le="30", histogram_key1="histogram_value1" } 5
+my_histogram_with_buckets_bucket{ le="50", histogram_key1="histogram_value1" } 6
+my_histogram_with_buckets_bucket{ le="100", histogram_key1="histogram_value1" } 7
+my_histogram_with_buckets_bucket{ le="300", histogram_key1="histogram_value1" } 9
+my_histogram_with_buckets_bucket{ le="500", histogram_key1="histogram_value1" } 9
+my_histogram_with_buckets_bucket{ le="+Inf", histogram_key1="histogram_value1" } 10
+my_histogram_with_buckets_count{ histogram_key1="histogram_value1" } 10
+my_histogram_with_buckets_sum{ histogram_key1="histogram_value1" } 1023
 
 # HELP my_histogram_with_buckets_and_labels histogram description
 # TYPE my_histogram_with_buckets_and_labels histogram
@@ -153,75 +173,13 @@ my_histogram_with_buckets_and_labels_bucket{ le="500", histogram_key1="histogram
 my_histogram_with_buckets_and_labels_bucket{ le="+Inf", histogram_key1="histogram_value1" } 7
 my_histogram_with_buckets_and_labels_count{ histogram_key1="histogram_value1" } 7
 my_histogram_with_buckets_and_labels_sum{ histogram_key1="histogram_value1" } 1093
-`)
+`
 
-type TestMetrics struct {
+type sampleMetrics struct {
 	counter1   Counter
 	counter2   Counter
 	gauge1     Gauge
 	gauge2     Gauge
 	histogram1 Histogram
 	histogram2 Histogram
-}
-
-func NewTestMetrics() *TestMetrics {
-	counter1 := NewCounter("my_counter",
-		Options.Description("counter description"),
-	)
-	counter2 := NewCounter("my_counter_with_labels",
-		Options.Description("counter description"),
-		Options.Label("counter_label_key", "counter_label_value"),
-	)
-	gauge1 := NewGauge("my_gauge",
-		Options.Description("gauge description"),
-	)
-	gauge2 := NewGauge("my_gauge_with_labels",
-		Options.Description("gauge description"),
-		Options.Label("gauge_label_key", "gauge_label_value"),
-	)
-	histogram1 := NewHistogram("my_histogram_with_buckets",
-		Options.Description("histogram description"),
-		Options.Bucket(0),
-		Options.Bucket(1),
-		Options.Bucket(20),
-		Options.Bucket(30),
-		Options.Bucket(50),
-		Options.Bucket(100),
-		Options.Bucket(300),
-		Options.Bucket(500),
-	)
-	histogram2 := NewHistogram("my_histogram_with_buckets_and_labels",
-		Options.Description("histogram description"),
-		Options.Bucket(0),
-		Options.Bucket(1),
-		Options.Bucket(20),
-		Options.Bucket(30),
-		Options.Bucket(50),
-		Options.Bucket(100),
-		Options.Bucket(300),
-		Options.Bucket(500),
-		Options.Label("histogram_key1", "histogram_value1"),
-	)
-
-	return &TestMetrics{
-		counter1:   counter1,
-		counter2:   counter2,
-		gauge1:     gauge1,
-		gauge2:     gauge2,
-		histogram1: histogram1,
-		histogram2: histogram2,
-	}
-}
-
-func assertEqual(t *testing.T, expected, actual interface{}) {
-	if reflect.DeepEqual(expected, actual) {
-		return
-	}
-	t.Helper()
-	t.Errorf("\n"+
-		"Expected: [%v]\n"+
-		"Actual:   [%v]",
-		expected,
-		actual,
-	)
 }

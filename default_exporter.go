@@ -21,23 +21,24 @@ func (this *defaultExporter) Add(items ...Metric) {
 
 func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Request) {
 	response.Header().Set("Content-Type", "text/plain; version=0.0.4")
+
 	for _, metric := range this.metrics {
 		_, _ = fmt.Fprintf(response, outputFormatHelp, metric.Name(), metric.Description())
 		_, _ = fmt.Fprintf(response, outputFormatType, metric.Name(), metric.Type())
 
 		histogram, ok := metric.(Histogram)
 		if !ok {
-			_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name(), metric.Labels(), metric.Value())
+			_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name(), metric.Labels(), metric.Value(0))
 		} else {
-			for _, bucket := range histogram.Buckets() {
+			for index, key := range histogram.Keys() {
 				_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name()+"_bucket",
-					formatBucketLabels(bucket.Key(), metric.Labels()), bucket.Value())
+					formatBucketLabels(key, metric.Labels()), histogram.Value(int64(index)))
 			}
 			// "A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count."
 			// https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
 			_, _ = fmt.Fprintf(response, outputFormatLabels,
 				metric.Name()+"_bucket",
-				formatBucketLabels(math.MaxUint64, metric.Labels()), metric.(Histogram).Count())
+				formatBucketLabels(math.MaxInt64, metric.Labels()), metric.(Histogram).Count())
 
 			_, _ = fmt.Fprintf(response, "%s_count%s %d\n", metric.Name(), metric.Labels(), histogram.Count())
 			_, _ = fmt.Fprintf(response, "%s_sum%s %d\n", metric.Name(), metric.Labels(), histogram.Sum())
@@ -45,13 +46,9 @@ func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Req
 	}
 }
 
-const outputFormatHelp = "\n# HELP %s %s\n"
-const outputFormatType = "# TYPE %s %s\n"
-const outputFormatLabels = "%s%s %d\n"
-
-func formatBucketLabels(bucket uint64, labels string) string {
+func formatBucketLabels(bucket int64, labels string) string {
 	var bucketString string
-	if bucket == math.MaxUint64 {
+	if bucket == math.MaxInt64 {
 		bucketString = `{ le="+Inf"`
 	} else {
 		bucketString = fmt.Sprintf(`{ le="%d"`, bucket)
@@ -61,3 +58,9 @@ func formatBucketLabels(bucket uint64, labels string) string {
 	}
 	return fmt.Sprintf("%s, %s", bucketString, strings.Replace(labels, "{ ", "", 1))
 }
+
+const (
+	outputFormatHelp   = "\n# HELP %s %s\n"
+	outputFormatType   = "# TYPE %s %s\n"
+	outputFormatLabels = "%s%s %d\n"
+)
