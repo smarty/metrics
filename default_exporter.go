@@ -43,18 +43,18 @@ func renderGauge(metric Gauge, response http.ResponseWriter) {
 	_, _ = fmt.Fprintf(response, outputFormatLabels, metric.Name(), metric.Labels(), metric.Value())
 }
 func renderHistogram(metric Histogram, response http.ResponseWriter) {
-	metricBucketName := metric.Name() + "_bucket"
+	name, labels := metric.Name(), metric.Labels()
+	metricBucketName := name + "_bucket"
 
 	for _, key := range metric.Buckets() {
-		_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatHistogramBucketLabels(key, metric.Labels()), metric.Value(key))
+		_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatHistogramBucketLabels(key, labels), metric.Value(key))
 	}
 
 	// https://prometheus.io/docs/instrumenting/exposition_formats/#histograms-and-summaries
 	// > A histogram must have a bucket with {le="+Inf"}. Its value must be identical to the value of x_count.
-	_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatHistogramBucketLabels(math.MaxUint64, metric.Labels()), metric.(Histogram).Count())
-	_, _ = fmt.Fprintf(response, outputFormatHistogramSum,
-		metric.Name(), metric.Labels(), metric.Count(),
-		metric.Name(), metric.Labels(), metric.Sum())
+	sum, count := metric.Sum(), metric.Count()
+	_, _ = fmt.Fprintf(response, outputFormatLabels, metricBucketName, formatHistogramBucketLabels(math.MaxUint64, labels), count)
+	_, _ = fmt.Fprintf(response, outputFormatHistogramSum, name, labels, count, name, labels, sum)
 }
 func formatHistogramBucketLabels(bucket uint64, labels string) string {
 	var bucketString string
