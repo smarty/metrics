@@ -32,11 +32,11 @@ type Histogram interface {
 	Metric
 
 	Measure(uint64)
-	Count() uint64
-	Sum() uint64
 
 	Buckets() []uint64
 	Value(bucket uint64) uint64
+	Count() uint64
+	Sum() uint64
 }
 
 type Exporter interface {

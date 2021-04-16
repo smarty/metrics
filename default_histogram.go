@@ -50,10 +50,10 @@ func (this *simpleHistogram) Measure(value uint64) {
 		}
 	}
 }
-func (this *simpleHistogram) Count() uint64 { return atomic.LoadUint64(this.count) }
-func (this *simpleHistogram) Sum() uint64   { return atomic.LoadUint64(this.sum) }
 
 func (this *simpleHistogram) Buckets() []uint64 { return this.buckets }
 func (this *simpleHistogram) Value(key uint64) uint64 {
 	return atomic.LoadUint64(&this.values[this.indexes[key]])
 }
+func (this *simpleHistogram) Count() uint64 { return atomic.LoadUint64(this.count) }
+func (this *simpleHistogram) Sum() uint64   { return atomic.LoadUint64(this.sum) }
