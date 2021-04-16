@@ -41,14 +41,14 @@ func (this *simpleHistogram) Description() string { return this.description }
 func (this *simpleHistogram) Labels() string      { return this.labels }
 
 func (this *simpleHistogram) Measure(value uint64) {
+	atomic.AddUint64(this.count, 1)
+	atomic.AddUint64(this.sum, value)
+
 	for index, key := range this.buckets {
 		if value <= key {
 			atomic.AddUint64(&this.values[index], 1)
 		}
 	}
-
-	atomic.AddUint64(this.sum, value)
-	atomic.AddUint64(this.count, 1)
 }
 func (this *simpleHistogram) Count() uint64 { return atomic.LoadUint64(this.count) }
 func (this *simpleHistogram) Sum() uint64   { return atomic.LoadUint64(this.sum) }
