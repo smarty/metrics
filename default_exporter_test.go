@@ -22,6 +22,8 @@ func TestExporter(t *testing.T) {
 		Options.Description("histogram description"),
 		Options.Bucket(0),
 		Options.Bucket(1))
+	exporter := NewExporter()
+	exporter.Add(counter, gauge, histogram, histogram2)
 
 	counter.Increment()
 	gauge.IncrementN(2)
@@ -30,10 +32,7 @@ func TestExporter(t *testing.T) {
 	histogram.Measure(3)
 	histogram2.Measure(42)
 
-	exporter := NewExporter()
-	exporter.Add(counter, gauge, histogram, histogram2)
 	recorder := httptest.NewRecorder()
-
 	exporter.ServeHTTP(recorder, nil)
 
 	actualBody := recorder.Body.String()
