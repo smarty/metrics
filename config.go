@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -25,6 +26,7 @@ func (singleton) Label(key, value string) option {
 func (singleton) Bucket(value uint64) option {
 	return func(this *configuration) {
 		this.Buckets = append(this.Buckets, value)
+		sort.Slice(this.Buckets, func(i, j int) bool { return this.Buckets[i] < this.Buckets[j] })
 	}
 }
 
