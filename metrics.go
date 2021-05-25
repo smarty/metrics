@@ -1,19 +1,17 @@
 package metrics
 
 import (
+	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/smartystreets/logging"
-
 	"github.com/smartystreets/metrics/internal/hdrhistogram"
 )
 
 type MetricsTracker struct {
-	logger *logging.Logger
-	lock   sync.Mutex
+	lock sync.Mutex
 
 	metrics map[int]Metric
 
@@ -233,7 +231,7 @@ func (this *MetricsTracker) addTags(metric int, tagPairs []string) {
 		return
 	}
 	if len(tagPairs)%2 > 0 {
-		this.logger.Printf("[WARN] tags must be submitted as an even number of key/value pairs. You provided %d values.", len(tagPairs))
+		log.Printf("[WARN] tags must be submitted as an even number of key/value pairs. You provided %d values.", len(tagPairs))
 		return
 	}
 

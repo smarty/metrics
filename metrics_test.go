@@ -7,7 +7,6 @@ import (
 
 	"github.com/smartystreets/assertions/should"
 	"github.com/smartystreets/gunit"
-	"github.com/smartystreets/logging"
 )
 
 func TestMetricsTrackerFixture(t *testing.T) {
@@ -23,7 +22,6 @@ type MetricsTrackerFixture struct {
 
 func (this *MetricsTrackerFixture) Setup() {
 	this.tracker = New()
-	this.tracker.logger = logging.Capture()
 	this.now = time.Now()
 }
 
@@ -344,7 +342,6 @@ func (this *MetricsTrackerFixture) TestOddNumberOfTagsIgnored() {
 			Tags:       nil,
 		},
 	})
-	this.So(this.tracker.logger.Log.String(), should.ContainSubstring, "[WARN] tags must be submitted as an even number of key/value pairs")
 }
 
 func (this *MetricsTrackerFixture) TestNoTags_Ignored() {
