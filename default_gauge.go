@@ -13,12 +13,15 @@ func NewGauge(name string, options ...option) Gauge {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value int64
-	return &simpleGauge{
+	this := &simpleGauge{
 		name:        config.Name,
 		description: config.Description,
 		labels:      config.RenderLabels(),
 		value:       &value,
 	}
+
+	config.Exporter.Add(this)
+	return this
 }
 
 func (this *simpleGauge) Type() string        { return "gauge" }

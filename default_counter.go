@@ -13,12 +13,16 @@ func NewCounter(name string, options ...option) Counter {
 	config := configuration{Name: name}
 	Options.apply(options...)(&config)
 	var value uint64
-	return &defaultCounter{
+
+	this := &defaultCounter{
 		name:        config.Name,
 		description: config.Description,
 		labels:      config.RenderLabels(),
 		value:       &value,
 	}
+
+	config.Exporter.Add(this)
+	return this
 }
 
 func (this *defaultCounter) Type() string        { return "counter" }

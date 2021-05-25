@@ -23,7 +23,8 @@ func NewHistogram(name string, options ...option) Histogram {
 	}
 
 	var sum, count uint64
-	return &simpleHistogram{
+
+	this := &simpleHistogram{
 		name:        config.Name,
 		description: config.Description,
 		labels:      config.RenderLabels(),
@@ -33,6 +34,9 @@ func NewHistogram(name string, options ...option) Histogram {
 		sum:         &sum,
 		count:       &count,
 	}
+
+	config.Exporter.Add(this)
+	return this
 }
 
 func (this *simpleHistogram) Type() string        { return "histogram" }

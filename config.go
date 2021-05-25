@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 )
@@ -14,6 +15,7 @@ type configuration struct {
 	Name        string
 	Description string
 	Labels      map[string]string
+	Exporter    Exporter
 	Buckets     []uint64
 }
 
@@ -22,6 +24,9 @@ func (singleton) Description(value string) option {
 }
 func (singleton) Label(key, value string) option {
 	return func(this *configuration) { this.Labels[key] = value }
+}
+func (singleton) Exporter(value Exporter) option {
+	return func(this *configuration) { this.Exporter = value }
 }
 func (singleton) Bucket(value uint64) option {
 	return func(this *configuration) {
@@ -39,8 +44,12 @@ func (singleton) apply(options ...option) option {
 	}
 }
 func (singleton) defaults(options ...option) []option {
-	return append([]option{}, options...)
+	return append([]option{
+		Options.Exporter(nop{}),
+	}, options...)
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 func (this configuration) RenderLabels() (result string) {
 	if len(this.Labels) == 0 {
@@ -53,3 +62,10 @@ func (this configuration) RenderLabels() (result string) {
 	result = strings.TrimSuffix(result, ", ")
 	return fmt.Sprintf("{ %s }", result)
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+type nop struct{}
+
+func (nop) Add(...Metric)                                {}
+func (nop) ServeHTTP(http.ResponseWriter, *http.Request) {}
