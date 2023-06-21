@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/smartystreets/metrics/v2"
+	"github.com/smarty/metrics/v2"
 )
 
 func main() {

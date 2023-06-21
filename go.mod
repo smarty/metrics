@@ -1,3 +1,3 @@
-module github.com/smartystreets/metrics/v2
+module github.com/smarty/metrics/v2
 
 go 1.17
