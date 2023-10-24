@@ -1,3 +1,3 @@
 module github.com/smarty/metrics/v2
 
-go 1.17
+go 1.21
