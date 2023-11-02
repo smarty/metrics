@@ -28,9 +28,9 @@ func (singleton) Label(key, value string) option {
 func (singleton) Exporter(value Exporter) option {
 	return func(this *configuration) { this.Exporter = value }
 }
-func (singleton) Bucket(value uint64) option {
+func (singleton) Bucket(values ...uint64) option {
 	return func(this *configuration) {
-		this.Buckets = append(this.Buckets, value)
+		this.Buckets = append(this.Buckets, values...)
 		sort.Slice(this.Buckets, func(i, j int) bool { return this.Buckets[i] < this.Buckets[j] })
 	}
 }
@@ -38,8 +38,8 @@ func (singleton) Bucket(value uint64) option {
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {
 		this.Labels = map[string]string{}
-		for _, option := range Options.defaults(options...) {
-			option(this)
+		for _, item := range Options.defaults(options...) {
+			item(this)
 		}
 	}
 }
