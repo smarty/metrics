@@ -16,7 +16,14 @@ func NewExporter() Exporter {
 }
 
 func (this *defaultExporter) Add(items ...Metric) {
-	this.metrics = append(this.metrics, items...)
+	parsed := make([]Metric, 0, len(items))
+	for _, item := range items {
+		if item != nil {
+			parsed = append(parsed, item)
+		}
+	}
+
+	this.metrics = append(this.metrics, parsed...)
 }
 func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Request) {
 	response.Header().Set("Content-Type", "text/plain; version=0.0.4")
