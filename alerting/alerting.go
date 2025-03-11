@@ -7,7 +7,7 @@ import (
 )
 
 type Monitor interface {
-	Alert(severity)
+	Monitor(event severity)
 }
 
 type severity int
@@ -47,8 +47,8 @@ func NewMetricsMonitor(anomalies, failures, disasters metrics.Counter) Monitor {
 	}
 }
 
-func (this *metricsMonitor) Alert(severity severity) {
-	switch severity {
+func (this *metricsMonitor) Monitor(event severity) {
+	switch event {
 	case Anomaly:
 		this.anomalies.Increment()
 	case Failure:
