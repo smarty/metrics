@@ -9,8 +9,8 @@ type simpleHistogram struct {
 	buckets     []uint64
 	indexes     map[uint64]int
 	values      []uint64
-	sum         *uint64
-	count       *uint64
+	sum         *atomic.Uint64
+	count       *atomic.Uint64
 }
 
 func NewHistogram(name string, options ...option) Histogram {
@@ -22,8 +22,6 @@ func NewHistogram(name string, options ...option) Histogram {
 		indexes[bucket] = index // bucket
 	}
 
-	var sum, count uint64
-
 	this := &simpleHistogram{
 		name:        config.Name,
 		description: config.Description,
@@ -31,8 +29,8 @@ func NewHistogram(name string, options ...option) Histogram {
 		buckets:     config.Buckets,
 		indexes:     indexes,
 		values:      make([]uint64, len(config.Buckets)),
-		sum:         &sum,
-		count:       &count,
+		sum:         new(atomic.Uint64),
+		count:       new(atomic.Uint64),
 	}
 
 	config.Exporter.Add(this)
@@ -45,8 +43,8 @@ func (this *simpleHistogram) Description() string { return this.description }
 func (this *simpleHistogram) Labels() string      { return this.labels }
 
 func (this *simpleHistogram) Measure(value uint64) {
-	atomic.AddUint64(this.count, 1)
-	atomic.AddUint64(this.sum, value)
+	this.count.Add(1)
+	this.sum.Add(value)
 
 	for index, key := range this.buckets {
 		if value <= key {
@@ -59,5 +57,5 @@ func (this *simpleHistogram) Buckets() []uint64 { return this.buckets }
 func (this *simpleHistogram) Value(key uint64) uint64 {
 	return atomic.LoadUint64(&this.values[this.indexes[key]])
 }
-func (this *simpleHistogram) Count() uint64 { return atomic.LoadUint64(this.count) }
-func (this *simpleHistogram) Sum() uint64   { return atomic.LoadUint64(this.sum) }
+func (this *simpleHistogram) Count() uint64 { return this.count.Load() }
+func (this *simpleHistogram) Sum() uint64   { return this.sum.Load() }
