@@ -3,6 +3,7 @@ package metrics
 import (
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -64,3 +65,21 @@ my_histogram_with_buckets_no_labels_bucket{ le="+Inf" } 1
 my_histogram_with_buckets_no_labels_count 1
 my_histogram_with_buckets_no_labels_sum 42
 `
+
+func TestExporterConcurrentAddAndServe(t *testing.T) {
+	exporter := NewExporter()
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+
+	for x := 0; x < 64; x++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			exporter.Add(NewCounter("my_counter"))
+		}()
+		go func() {
+			defer wg.Done()
+			exporter.ServeHTTP(httptest.NewRecorder(), nil)
+		}()
+	}
+}

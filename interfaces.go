@@ -39,6 +39,9 @@ type Histogram interface {
 	Sum() uint64
 }
 
+// Exporter renders registered metrics in the Prometheus text exposition format.
+// Implementations are safe for concurrent use: Add may be called from multiple
+// goroutines, and concurrently with ServeHTTP.
 type Exporter interface {
 	http.Handler
 

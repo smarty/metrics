@@ -5,9 +5,11 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 type defaultExporter struct {
+	lock    sync.RWMutex
 	metrics []Metric
 }
 
@@ -16,20 +18,31 @@ func NewExporter() Exporter {
 }
 
 func (this *defaultExporter) Add(items ...Metric) {
-	parsed := make([]Metric, 0, len(items))
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	updated := make([]Metric, len(this.metrics), len(this.metrics)+len(items))
+	copy(updated, this.metrics)
 	for _, item := range items {
 		if item != nil {
-			parsed = append(parsed, item)
+			updated = append(updated, item)
 		}
 	}
-
-	this.metrics = append(this.metrics, parsed...)
+	this.metrics = updated
 }
 func (this *defaultExporter) ServeHTTP(response http.ResponseWriter, _ *http.Request) {
 	response.Header().Set("Content-Type", "text/plain; version=0.0.4")
-	for _, metric := range this.metrics {
+	for _, metric := range this.current() {
 		renderMetric(metric, response)
 	}
+}
+
+// current returns the published slice of metrics. Add never mutates a slice
+// once published (it copies on write), so callers may iterate the result
+// without holding the lock, and rendering never blocks callers of Add.
+func (this *defaultExporter) current() (results []Metric) {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+	return this.metrics
 }
 func renderMetric(metric Metric, response http.ResponseWriter) {
 	_, _ = fmt.Fprintf(response, outputFormatHelp, metric.Name(), metric.Description())
