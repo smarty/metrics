@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -56,8 +58,10 @@ func (this configuration) RenderLabels() (result string) {
 		return ""
 	}
 
-	for key, value := range this.Labels {
-		result += fmt.Sprintf(`%s="%s", `, key, value)
+	// Sorted keys render every series the same way on every start, so output can be
+	// diffed and matched as text; Prometheus itself ignores label order.
+	for _, key := range slices.Sorted(maps.Keys(this.Labels)) {
+		result += fmt.Sprintf(`%s="%s", `, key, this.Labels[key])
 	}
 	result = strings.TrimSuffix(result, ", ")
 	return fmt.Sprintf("{ %s }", result)

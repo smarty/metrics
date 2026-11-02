@@ -39,9 +39,8 @@ into the metric. Two non-obvious consequences:
   registered with an internal `nop` exporter and is never exported unless added
   manually.
 - Labels are rendered to their final string (`{ key="value", ... }`) once, at
-  construction, by iterating a map. With more than one label the order is not
-  deterministic, which is why the exporter test uses exactly one label per
-  metric.
+  construction. They are stored in a map but rendered sorted by key, so a
+  series renders the same way on every start and tests can match it exactly.
 
 **Histogram semantics.** Buckets are cumulative (`le`), matching Prometheus:
 `Measure(v)` increments every bucket whose bound is `>= v`. Buckets are sorted
